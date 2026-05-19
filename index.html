@@ -1,0 +1,1889 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fantasy IPL Booster Optimizer — Live</title>
+<style>
+  :root {
+    --ipl-blue: #19388A;
+    --ipl-sky: #4F91CD;
+    --ipl-gold: #F5A623;
+    --bg: #0d1b3e;
+    --card-bg: #1a2a5e;
+    --card-inner: #0f1f4a;
+    --text-primary: #ffffff;
+    --text-secondary: #a8bde0;
+    --border: rgba(79,145,205,0.25);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; background:var(--bg); color:var(--text-primary); min-height:100vh; }
+
+  /* ── HEADER ── */
+  .site-header {
+    background:linear-gradient(135deg,#19388A 0%,#0d1b3e 60%,#19388A 100%);
+    border-bottom:3px solid var(--ipl-gold);
+    padding:28px 24px 20px; text-align:center; position:relative; overflow:hidden;
+  }
+  .site-header::before {
+    content:''; position:absolute; inset:0;
+    background:radial-gradient(ellipse at 50% -20%,rgba(79,145,205,0.3) 0%,transparent 70%);
+  }
+  .site-header h1 {
+    font-size:2rem; font-weight:800; letter-spacing:1px; position:relative;
+    background:linear-gradient(90deg,#fff 0%,#F5A623 50%,#4F91CD 100%);
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+  }
+  .site-header p { color:var(--text-secondary); font-size:0.88rem; margin-top:6px; position:relative; }
+  .header-meta { display:flex; align-items:center; justify-content:center; gap:12px; margin-top:12px; flex-wrap:wrap; }
+  .header-badge {
+    display:inline-flex; align-items:center; gap:6px;
+    background:rgba(245,166,35,0.15); border:1px solid rgba(245,166,35,0.4);
+    color:var(--ipl-gold); font-size:0.75rem; font-weight:600;
+    padding:4px 12px; border-radius:20px;
+  }
+  .live-badge {
+    display:inline-flex; align-items:center; gap:6px;
+    background:rgba(34,197,94,0.15); border:1px solid rgba(34,197,94,0.4);
+    color:#4ade80; font-size:0.75rem; font-weight:600;
+    padding:4px 12px; border-radius:20px;
+  }
+  .live-dot { width:7px; height:7px; background:#4ade80; border-radius:50%; animation:pulse 1.5s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(1.3)} }
+
+  /* ── LAST UPDATED ── */
+  .last-updated {
+    text-align:center; font-size:0.75rem; color:var(--text-secondary);
+    padding:8px; background:rgba(0,0,0,0.3); border-bottom:1px solid var(--border);
+  }
+  #refresh-btn {
+    background:none; border:1px solid var(--ipl-sky); color:var(--ipl-sky);
+    font-size:0.72rem; padding:2px 10px; border-radius:12px; cursor:pointer;
+    margin-left:10px; transition:all 0.2s;
+  }
+  #refresh-btn:hover { background:var(--ipl-sky); color:#fff; }
+
+  /* ── LOADING ── */
+  .loading-screen {
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    min-height:60vh; gap:20px;
+  }
+  .spinner {
+    width:50px; height:50px; border:4px solid rgba(79,145,205,0.2);
+    border-top-color:var(--ipl-sky); border-radius:50%;
+    animation:spin 0.8s linear infinite;
+  }
+  @keyframes spin { to{transform:rotate(360deg)} }
+  .loading-text { color:var(--text-secondary); font-size:1rem; }
+  .loading-sub { color:rgba(168,189,224,0.6); font-size:0.82rem; }
+
+  /* ── ERROR ── */
+  .error-screen {
+    display:none; flex-direction:column; align-items:center; justify-content:center;
+    min-height:60vh; gap:16px; text-align:center; padding:24px;
+  }
+  .error-icon { font-size:3rem; }
+  .error-title { font-size:1.2rem; font-weight:700; color:#f87171; }
+  .error-msg { color:var(--text-secondary); font-size:0.88rem; max-width:500px; line-height:1.6; }
+  .error-url { font-size:0.75rem; color:rgba(168,189,224,0.5); word-break:break-all; margin-top:8px; }
+
+  /* ── TABS ── */
+  .tab-bar {
+    display:flex; background:var(--card-bg);
+    border-bottom:2px solid var(--border);
+    padding:0 24px; position:sticky; top:0; z-index:100;
+  }
+  .tab-btn {
+    padding:16px 28px; border:none; background:none;
+    color:var(--text-secondary); font-size:0.95rem; font-weight:600;
+    cursor:pointer; border-bottom:3px solid transparent;
+    margin-bottom:-2px; transition:all 0.2s; white-space:nowrap;
+  }
+  .tab-btn.active { color:var(--ipl-gold); border-bottom-color:var(--ipl-gold); }
+  .tab-btn:hover:not(.active) { color:var(--ipl-sky); }
+
+  /* ── CONTENT ── */
+  .content { padding:24px; max-width:1300px; margin:0 auto; }
+  .tab-pane { display:none; }
+  .tab-pane.active { display:block; }
+
+  /* ── SEARCH BAR ── */
+  .search-bar { display:flex; gap:12px; margin-bottom:24px; align-items:center; flex-wrap:wrap; }
+  .search-bar input {
+    flex:1; min-width:220px;
+    background:var(--card-bg); border:1px solid var(--border);
+    color:var(--text-primary); padding:10px 16px;
+    border-radius:8px; font-size:0.9rem;
+  }
+  .search-bar input:focus { outline:none; border-color:var(--ipl-sky); }
+  .search-bar input::placeholder { color:var(--text-secondary); }
+  .result-count { color:var(--text-secondary); font-size:0.85rem; white-space:nowrap; }
+
+  /* ── MATCH CARD ── */
+  .match-card {
+    background:var(--card-bg); border:1px solid var(--border);
+    border-radius:14px; margin-bottom:20px; overflow:hidden;
+    transition:box-shadow 0.2s;
+  }
+  .match-card:hover { box-shadow:0 0 30px rgba(79,145,205,0.15); }
+  .match-card-header {
+    display:flex; align-items:center; gap:16px; padding:18px 22px;
+    background:linear-gradient(90deg,rgba(25,56,138,0.8) 0%,rgba(13,27,62,0.4) 100%);
+    border-bottom:1px solid var(--border); cursor:pointer; user-select:none;
+  }
+  .rank-circle {
+    width:48px; height:48px; border-radius:50%; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+    font-size:1.2rem; font-weight:800;
+  }
+  .rank-1 { background:linear-gradient(135deg,#F5A623,#E8860A); color:#fff; }
+  .rank-2 { background:linear-gradient(135deg,#C0C0C0,#888); color:#fff; }
+  .rank-3 { background:linear-gradient(135deg,#cd7f32,#a0522d); color:#fff; }
+  .rank-other { background:rgba(79,145,205,0.2); color:var(--ipl-sky); border:1px solid var(--ipl-sky); }
+  .match-meta { flex:1; }
+  .match-md { font-size:0.75rem; color:var(--ipl-gold); font-weight:700; letter-spacing:0.5px; text-transform:uppercase; }
+  .match-name { font-size:1.15rem; font-weight:700; margin-top:2px; }
+  .match-date { font-size:0.8rem; color:var(--text-secondary); margin-top:2px; }
+  .match-score-block { text-align:right; }
+  .match-score-num {
+    font-size:2rem; font-weight:800;
+    background:linear-gradient(90deg,var(--ipl-sky),var(--ipl-gold));
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+  }
+  .match-score-lbl { font-size:0.7rem; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px; }
+  .expand-icon { font-size:1rem; color:var(--text-secondary); margin-left:8px; transition:transform 0.2s; }
+  .match-card.expanded .expand-icon { transform:rotate(180deg); }
+
+  /* ── PLAYER TABLE ── */
+  .players-section { display:none; padding:0 22px 22px; }
+  .match-card.expanded .players-section { display:block; }
+  .section-divider {
+    display:flex; align-items:center; gap:12px; margin:16px 0 14px;
+  }
+  .section-divider span {
+    font-size:0.75rem; font-weight:700; letter-spacing:0.5px;
+    text-transform:uppercase; padding:3px 10px; border-radius:4px;
+  }
+  .section-divider .overall-badge { background:rgba(79,145,205,0.2); color:var(--ipl-sky); }
+  .section-divider .last4-badge { background:rgba(245,166,35,0.2); color:var(--ipl-gold); }
+  .section-divider::after { content:''; flex:1; height:1px; background:var(--border); }
+
+  .players-table { width:100%; border-collapse:collapse; font-size:0.88rem; }
+  .players-table thead tr { background:var(--card-inner); }
+  .players-table th {
+    padding:10px 12px; text-align:left;
+    font-size:0.72rem; text-transform:uppercase; letter-spacing:0.5px;
+    color:var(--text-secondary); font-weight:700; border-bottom:2px solid var(--border);
+  }
+  .players-table th.overall-col { color:var(--ipl-sky); }
+  .players-table th.last4-col { color:var(--ipl-gold); }
+  .players-table th.center, .players-table td.center { text-align:center; }
+  .players-table tbody tr { border-bottom:1px solid rgba(79,145,205,0.1); transition:background 0.15s; }
+  .players-table tbody tr:hover { background:rgba(79,145,205,0.08); }
+  .players-table tbody tr:last-child { border-bottom:none; }
+  .players-table td { padding:12px 12px; vertical-align:middle; }
+  .sep-col { border-left:2px solid var(--border) !important; }
+
+  .player-name-cell { display:flex; align-items:center; gap:10px; }
+  .team-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+  .pname { font-weight:600; color:#fff; }
+  .team-tag {
+    display:inline-block; font-size:0.7rem; font-weight:700;
+    padding:2px 7px; border-radius:4px; margin-left:6px;
+  }
+  .pos-tag {
+    display:inline-block; font-size:0.68rem; font-weight:600;
+    padding:2px 6px; border-radius:4px;
+    background:rgba(79,145,205,0.15); color:var(--ipl-sky);
+    text-transform:uppercase; letter-spacing:0.3px;
+  }
+  .price-text { color:var(--ipl-gold); font-weight:600; }
+  .stat-total { font-weight:700; font-size:1rem; color:var(--ipl-sky); }
+  .stat-avg { color:var(--text-secondary); font-size:0.85rem; }
+  .stat-played { color:var(--text-secondary); text-align:center; }
+  .stat-l4total { font-weight:700; font-size:1rem; color:var(--ipl-gold); }
+  .stat-l4avg { color:var(--text-secondary); font-size:0.85rem; }
+  .stat-l4games { color:var(--text-secondary); text-align:center; }
+
+  /* ── TEAM COLORS ── */
+  .team-CSK { background:#F5A623; }  .tag-CSK { background:rgba(245,166,35,0.2); color:#F5A623; }
+  .team-MI  { background:#004EA2; }  .tag-MI  { background:rgba(0,78,162,0.3); color:#60a5fa; }
+  .team-RCB { background:#E31837; }  .tag-RCB { background:rgba(227,24,55,0.2); color:#f87171; }
+  .team-KKR { background:#3A1F6E; }  .tag-KKR { background:rgba(58,31,110,0.4); color:#c084fc; }
+  .team-RR  { background:#E91E8C; }  .tag-RR  { background:rgba(233,30,140,0.2); color:#f472b6; }
+  .team-SRH { background:#FF6D00; }  .tag-SRH { background:rgba(255,109,0,0.2); color:#fb923c; }
+  .team-PBKS{ background:#D71920; }  .tag-PBKS{ background:rgba(215,25,32,0.2); color:#fca5a5; }
+  .team-GT  { background:#1C3573; }  .tag-GT  { background:rgba(28,53,115,0.4); color:#93c5fd; }
+  .team-LSG { background:#00A99D; }  .tag-LSG { background:rgba(0,169,157,0.2); color:#5eead4; }
+  .team-DC  { background:#0078BC; }  .tag-DC  { background:rgba(0,120,188,0.2); color:#60a5fa; }
+
+  .empty { text-align:center; padding:60px 20px; color:var(--text-secondary); }
+  .empty .icon { font-size:3rem; margin-bottom:12px; }
+
+  /* ── INFO BAR ── */
+  .info-bar {
+    display:flex; gap:10px; flex-wrap:wrap; margin-bottom:20px;
+  }
+  .info-chip {
+    font-size:0.75rem; padding:4px 12px; border-radius:20px;
+    background:rgba(79,145,205,0.12); border:1px solid var(--border);
+    color:var(--text-secondary);
+  }
+  .info-chip strong { color:var(--ipl-sky); }
+
+  /* ── FIXTURE GROUP HEADER ── */
+  .fixture-group-header {
+    display: flex; align-items: center; gap: 14px;
+    padding: 14px 20px; margin: 24px 0 10px;
+    background: linear-gradient(90deg, rgba(25,56,138,0.7) 0%, transparent 100%);
+    border-left: 4px solid var(--ipl-gold); border-radius: 0 8px 8px 0;
+  }
+  .fixture-group-header:first-child { margin-top: 0; }
+  .fixture-group-badge {
+    font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.5px; color: var(--ipl-gold);
+    background: rgba(245,166,35,0.15); border: 1px solid rgba(245,166,35,0.3);
+    padding: 3px 10px; border-radius: 20px; flex-shrink: 0;
+  }
+  .fixture-group-name { font-size: 1.05rem; font-weight: 700; color: #fff; flex: 1; }
+  .fixture-group-date { font-size: 0.82rem; color: var(--text-secondary); flex-shrink: 0; }
+
+  /* ── TRIPLE CAPTAIN ── */
+  .tc-card { background:var(--card-bg); border:1px solid var(--border); border-radius:14px; margin-bottom:16px; overflow:hidden; transition:box-shadow 0.2s; }
+  .tc-card:hover { box-shadow:0 0 30px rgba(245,166,35,0.15); }
+  .rank-1-card { border-color:rgba(245,166,35,0.6)!important; }
+  .rank-2-card { border-color:rgba(192,192,192,0.5)!important; }
+  .rank-3-card { border-color:rgba(205,127,50,0.5)!important; }
+  .tc-header { display:flex; align-items:center; gap:16px; padding:20px 22px; background:linear-gradient(90deg,rgba(25,56,138,0.9) 0%,rgba(13,27,62,0.4) 100%); border-bottom:1px solid var(--border); }
+  .tc-player-block { flex:1; }
+  .tc-player-name { font-size:1.25rem; font-weight:800; color:#fff; margin-bottom:4px; }
+  .tc-player-meta { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:6px; }
+  .tc-match-line { font-size:0.85rem; color:var(--text-secondary); margin-top:2px; }
+  .tc-score-block { text-align:right; flex-shrink:0; }
+  .tc-score-num { font-size:2.2rem; font-weight:800; background:linear-gradient(90deg,#F5A623,#f59e0b); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+  .tc-score-lbl { font-size:0.7rem; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px; }
+  .tc-body { padding:16px 22px; }
+  .tc-reason { background:rgba(245,166,35,0.08); border-left:3px solid var(--ipl-gold); padding:10px 14px; border-radius:0 8px 8px 0; font-size:0.88rem; color:#e2c97e; line-height:1.6; margin-bottom:10px; }
+  .tc-stats-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:10px; }
+  .tc-stat-box { background:var(--card-inner); border-radius:8px; padding:10px 12px; border:1px solid var(--border); }
+  .tc-stat-label { font-size:0.68rem; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-secondary); margin-bottom:4px; }
+  .tc-stat-value { font-size:1.1rem; font-weight:700; }
+  .tc-stat-sub { font-size:0.72rem; color:var(--text-secondary); margin-top:2px; }
+  .tc-risk-bar { display:flex; gap:8px; align-items:center; margin-top:10px; flex-wrap:wrap; }
+  .tc-pill { font-size:0.72rem; font-weight:600; padding:3px 10px; border-radius:20px; }
+  .pill-green  { background:rgba(74,222,128,0.15); color:#4ade80; border:1px solid rgba(74,222,128,0.3); }
+  .pill-yellow { background:rgba(245,166,35,0.15); color:#F5A623; border:1px solid rgba(245,166,35,0.3); }
+  .pill-red    { background:rgba(248,113,113,0.15); color:#f87171; border:1px solid rgba(248,113,113,0.3); }
+  .pill-purple { background:rgba(192,132,252,0.15); color:#c084fc; border:1px solid rgba(192,132,252,0.3); }
+  .pill-blue   { background:rgba(79,145,205,0.15); color:var(--ipl-sky); border:1px solid rgba(79,145,205,0.3); }
+  .recent-scores { display:flex; gap:6px; align-items:center; margin-top:12px; flex-wrap:wrap; }
+  .recent-label { font-size:0.72rem; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.4px; }
+  .score-bubble { width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:0.78rem; font-weight:700; }
+  .score-bubble.high { background:rgba(74,222,128,0.2); color:#4ade80; border:1px solid rgba(74,222,128,0.4); }
+  .score-bubble.mid  { background:rgba(245,166,35,0.2); color:#F5A623; border:1px solid rgba(245,166,35,0.4); }
+  .score-bubble.low  { background:rgba(248,113,113,0.2); color:#f87171; border:1px solid rgba(248,113,113,0.4); }
+  .score-arrow { color:var(--text-secondary); font-size:0.7rem; }
+
+  /* ── FOREIGN ROYALE ── */
+  .hr-card { background:var(--card-bg); border:1px solid var(--border); border-radius:14px; margin-bottom:14px; overflow:hidden; }
+  .hr-header { display:flex; align-items:center; gap:14px; padding:16px 20px; background:linear-gradient(90deg,rgba(25,56,138,0.85) 0%,rgba(13,27,62,0.3) 100%); border-bottom:1px solid var(--border); cursor:pointer; user-select:none; }
+  .hr-match-info { flex:1; }
+  .hr-match-num { font-size:0.72rem; color:var(--ipl-gold); font-weight:700; text-transform:uppercase; letter-spacing:0.5px; }
+  .hr-match-name { font-size:1.05rem; font-weight:700; margin-top:2px; }
+  .hr-match-date { font-size:0.8rem; color:var(--text-secondary); margin-top:2px; }
+  .hr-scenarios { display:flex; gap:8px; align-items:center; flex-shrink:0; }
+  .hr-scenario { text-align:center; padding:6px 10px; border-radius:8px; min-width:70px; }
+  .hr-scenario .hr-val { font-size:1.1rem; font-weight:800; }
+  .hr-scenario .hr-lbl { font-size:0.65rem; text-transform:uppercase; letter-spacing:0.4px; margin-top:2px; opacity:0.8; }
+  .hr-best { background:rgba(74,222,128,0.15); border:1px solid rgba(74,222,128,0.3); color:#4ade80; }
+  .hr-worst { background:rgba(248,113,113,0.15); border:1px solid rgba(248,113,113,0.3); color:#f87171; }
+  .hr-actual { background:rgba(79,145,205,0.15); border:1px solid rgba(79,145,205,0.3); color:var(--ipl-sky); }
+  .hr-body { display:none; padding:14px 20px; }
+  .hr-card.expanded .hr-body { display:block; }
+  .hr-card.expanded .hr-expand { transform:rotate(180deg); }
+  .hr-expand { font-size:0.9rem; color:var(--text-secondary); transition:transform 0.2s; }
+  .hr-players-list { display:grid; gap:8px; }
+  .hr-player-row { display:flex; align-items:center; gap:10px; padding:8px 12px; background:var(--card-inner); border-radius:8px; border:1px solid var(--border); }
+  .hr-player-rank { width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:0.8rem; font-weight:700; flex-shrink:0; }
+  .hr-p1 { background:rgba(245,166,35,0.25); color:#F5A623; }
+  .hr-p2 { background:rgba(192,192,192,0.2); color:#C0C0C0; }
+  .hr-p3 { background:rgba(205,127,50,0.2); color:#cd7f32; }
+  .hr-p4 { background:rgba(79,145,205,0.15); color:var(--ipl-sky); }
+  .hr-player-name { font-weight:600; flex:1; font-size:0.92rem; }
+  .hr-player-score { font-size:1.1rem; font-weight:800; color:var(--ipl-gold); min-width:36px; text-align:right; }
+  .hr-multiplier { font-size:0.72rem; padding:2px 6px; border-radius:4px; flex-shrink:0; }
+  .hr-cap  { background:rgba(245,166,35,0.2); color:#F5A623; }
+  .hr-vc   { background:rgba(192,192,192,0.15); color:#C0C0C0; }
+  .hr-scenario-note { font-size:0.78rem; color:var(--text-secondary); margin-top:10px; padding:8px 12px; background:rgba(0,0,0,0.2); border-radius:6px; line-height:1.5; }
+
+  /* ── TRANSFER PLANNER ── */
+  .tp-grid { display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:24px; }
+  @media(max-width:900px){ .tp-grid{grid-template-columns:1fr;} }
+  .tp-section-title { font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-secondary); margin-bottom:10px; }
+  .tp-card { background:var(--card-bg); border:1px solid var(--border); border-radius:12px; overflow:hidden; }
+  .tp-card-header { padding:14px 18px; background:linear-gradient(90deg,rgba(25,56,138,0.8),rgba(13,27,62,0.3)); border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+  .tp-card-title { font-size:1rem; font-weight:700; }
+  .tp-card-sub { font-size:0.78rem; color:var(--text-secondary); margin-top:2px; }
+  .tp-player-row { display:flex; align-items:center; gap:10px; padding:10px 16px; border-bottom:1px solid rgba(79,145,205,0.08); transition:background 0.15s; }
+  .tp-player-row:hover { background:rgba(79,145,205,0.06); }
+  .tp-player-row:last-child { border-bottom:none; }
+  .tp-player-info { flex:1; min-width:0; }
+  .tp-player-name { font-weight:600; font-size:0.92rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .tp-player-meta { font-size:0.75rem; color:var(--text-secondary); margin-top:2px; display:flex; gap:8px; flex-wrap:wrap; }
+  .tp-score-col { text-align:right; flex-shrink:0; }
+  .tp-score-val { font-size:1rem; font-weight:700; }
+  .tp-score-sub { font-size:0.68rem; color:var(--text-secondary); }
+  .tp-days-badge { font-size:0.7rem; font-weight:700; padding:2px 7px; border-radius:10px; flex-shrink:0; }
+  .days-0  { background:rgba(74,222,128,0.2); color:#4ade80; border:1px solid rgba(74,222,128,0.4); }
+  .days-1  { background:rgba(163,230,53,0.2); color:#a3e635; border:1px solid rgba(163,230,53,0.4); }
+  .days-2  { background:rgba(250,204,21,0.2); color:#facc15; border:1px solid rgba(250,204,21,0.4); }
+  .days-3  { background:rgba(251,146,60,0.15); color:#fb923c; border:1px solid rgba(251,146,60,0.3); }
+  .days-far{ background:rgba(248,113,113,0.15); color:#f87171; border:1px solid rgba(248,113,113,0.3); }
+  .tp-n-selector { display:flex; gap:8px; margin-bottom:20px; flex-wrap:wrap; }
+  .tp-n-btn { padding:8px 18px; border-radius:8px; border:1px solid var(--border); background:var(--card-bg); color:var(--text-secondary); font-size:0.88rem; font-weight:600; cursor:pointer; transition:all 0.2s; }
+  .tp-n-btn.active { background:var(--ipl-blue); color:#fff; border-color:var(--ipl-sky); }
+  .tp-n-btn:hover:not(.active) { border-color:var(--ipl-sky); color:var(--ipl-sky); }
+  .tp-plan-container { display:grid; gap:14px; }
+  .tp-step { background:var(--card-bg); border:1px solid var(--border); border-radius:12px; overflow:hidden; }
+  .tp-step-header { display:flex; align-items:center; gap:10px; padding:12px 16px; background:rgba(25,56,138,0.5); border-bottom:1px solid var(--border); }
+  .tp-step-num { width:28px; height:28px; border-radius:50%; background:var(--ipl-gold); color:#0d1b3e; font-weight:800; font-size:0.85rem; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .tp-step-title { font-size:0.95rem; font-weight:700; }
+  .tp-step-budget { margin-left:auto; font-size:0.78rem; color:var(--ipl-gold); }
+  .tp-out-in { display:grid; grid-template-columns:1fr 1fr; }
+  @media(max-width:600px){ .tp-out-in{grid-template-columns:1fr;} }
+  .tp-out { padding:12px 14px; border-right:1px solid var(--border); }
+  .tp-in  { padding:12px 14px; }
+  .tp-out-label { font-size:0.65rem; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#f87171; margin-bottom:8px; display:flex; align-items:center; gap:4px; }
+  .tp-in-label  { font-size:0.65rem; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#4ade80; margin-bottom:8px; display:flex; align-items:center; gap:4px; }
+  .tp-player-card { display:flex; align-items:center; gap:8px; padding:8px 10px; border-radius:8px; margin-bottom:6px; }
+  .tp-player-card.out-card { background:rgba(248,113,113,0.08); border:1px solid rgba(248,113,113,0.2); }
+  .tp-player-card.in-card  { background:rgba(74,222,128,0.08);  border:1px solid rgba(74,222,128,0.2); cursor:pointer; transition:all 0.15s; }
+  .tp-player-card.in-card:hover  { background:rgba(74,222,128,0.15); border-color:rgba(74,222,128,0.4); }
+  .tp-player-card.in-card.selected { background:rgba(74,222,128,0.2); border-color:#4ade80; }
+  .tp-alt-label { font-size:0.68rem; color:var(--text-secondary); margin-bottom:4px; margin-top:2px; }
+  .tp-reason { font-size:0.75rem; color:var(--text-secondary); padding:6px 10px; background:rgba(0,0,0,0.2); border-radius:0 0 8px 8px; line-height:1.5; }
+  .tp-summary-bar { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:20px; }
+  .tp-summary-chip { padding:6px 14px; border-radius:20px; font-size:0.78rem; font-weight:600; }
+  .tp-pos-badge { font-size:0.65rem; padding:1px 5px; border-radius:3px; background:rgba(79,145,205,0.15); color:var(--ipl-sky); }
+
+  @media (max-width:768px) {
+    .tab-btn { padding:12px 16px; font-size:0.85rem; }
+    .match-name { font-size:1rem; }
+    .match-score-num { font-size:1.5rem; }
+    .players-table { font-size:0.8rem; }
+    .players-table th, .players-table td { padding:8px 7px; }
+    .col-hide { display:none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="site-header">
+  <h1>⚡ Fantasy IPL Booster Optimizer</h1>
+  <p>Live data from Google Sheets · Auto-updates on every page load</p>
+  <div class="header-meta">
+    <div class="live-badge"><span class="live-dot"></span> Live Google Sheets</div>
+  </div>
+</header>
+
+<!-- LAST UPDATED BAR -->
+<div class="last-updated" id="last-updated-bar">
+  Fetching latest data…
+  <button id="refresh-btn" onclick="loadData()">↻ Refresh</button>
+</div>
+
+<!-- MAIN APP (hidden until data loads) -->
+<div id="app" style="display:none">
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="switchTab('foreign',this)">⭐ Foreign Stars <small style="opacity:0.7">(Max 4)</small></button>
+    <button class="tab-btn" onclick="switchTab('indian',this)">🏏 Indian Warriors <small style="opacity:0.7">(Max 11)</small></button>
+    <button class="tab-btn" onclick="switchTab('captain',this)">👑 Triple Captain</button>
+    <button class="tab-btn" onclick="switchTab('history',this)">🏆 Foreign Royale</button>
+    <button class="tab-btn" onclick="switchTab('indianroyale',this)">🇮🇳 Indian Royale</button>
+    <button class="tab-btn" onclick="switchTab('transfers',this)">🔄 Transfer Planner</button>
+  </div>
+
+  <div class="content">
+    <!-- FOREIGN -->
+    <div class="tab-pane active" id="pane-foreign">
+      <div class="info-bar" id="info-foreign"></div>
+      <div class="search-bar">
+        <input type="text" id="search-foreign" placeholder="🔍  Search by team, player, match…" oninput="filterCards('foreign')">
+        <span class="result-count" id="count-foreign"></span>
+      </div>
+      <div id="cards-foreign"></div>
+    </div>
+
+    <!-- INDIAN -->
+    <div class="tab-pane" id="pane-indian">
+      <div class="info-bar" id="info-indian"></div>
+      <div class="search-bar">
+        <input type="text" id="search-indian" placeholder="🔍  Search by team, player, match…" oninput="filterCards('indian')">
+        <span class="result-count" id="count-indian"></span>
+      </div>
+      <div id="cards-indian"></div>
+    </div>
+
+    <!-- TRIPLE CAPTAIN -->
+    <div class="tab-pane" id="pane-captain">
+      <div class="info-bar" id="info-captain"></div>
+      <div class="search-bar">
+        <input type="text" id="search-captain" placeholder="🔍  Search by player, team, or match…" oninput="filterCards('captain')">
+        <span class="result-count" id="count-captain"></span>
+      </div>
+      <div id="cards-captain"></div>
+    </div>
+
+    <!-- FOREIGN ROYALE — past games analysis -->
+    <div class="tab-pane" id="pane-history">
+      <div class="info-bar" id="info-history"></div>
+      <div class="search-bar">
+        <input type="text" id="search-history" placeholder="🔍  Search by player, team, or date…" oninput="filterHistory()">
+        <span class="result-count" id="count-history"></span>
+      </div>
+      <div id="cards-history"></div>
+    </div>
+
+    <!-- INDIAN ROYALE — past games analysis for Indians -->
+    <div class="tab-pane" id="pane-indianroyale">
+      <div class="info-bar" id="info-indianroyale"></div>
+      <div class="search-bar">
+        <input type="text" id="search-indianroyale" placeholder="🔍  Search by player, team, or date…" oninput="filterIndianRoyale()">
+        <span class="result-count" id="count-indianroyale"></span>
+      </div>
+      <div id="cards-indianroyale"></div>
+    </div>
+
+    <!-- TRANSFER PLANNER -->
+    <div class="tab-pane" id="pane-transfers">
+      <div id="tp-app"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- LOADING -->
+<div id="loading-screen" class="loading-screen">
+  <div class="spinner"></div>
+  <div class="loading-text">Fetching live data from Google Sheets…</div>
+  <div class="loading-sub">Pulling Player Data &amp; Fixture List</div>
+</div>
+
+<!-- ERROR -->
+<div id="error-screen" class="error-screen">
+  <div class="error-icon">⚠️</div>
+  <div class="error-title">Could not load data</div>
+  <div class="error-msg" id="error-msg-text"></div>
+  <div class="error-url" id="error-url-text"></div>
+  <button id="refresh-btn-2" onclick="loadData()" style="margin-top:16px; background:var(--ipl-blue); border:1px solid var(--ipl-sky); color:#fff; padding:10px 24px; border-radius:8px; cursor:pointer; font-size:0.9rem;">↻ Try Again</button>
+</div>
+
+<script>
+// ── CONFIG ─────────────────────────────────────────────────────────────────
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzgm21rsLxxP9G2u7WS6RZXF9BIkH0pACRgVvu_Ksag8AdXQVF1zVwK1hBh9dtyPPmqbQ/exec';
+const PLAYERS_URL     = APPS_SCRIPT_URL + '?sheet=PlayerData';
+const FIXTURES_URL    = APPS_SCRIPT_URL + '?sheet=FixtureList';
+const TEAM_URL        = APPS_SCRIPT_URL + '?gid=87107120';
+
+const TEAM_MAP = {
+  'Sunrisers Hyderabad':'SRH','Kolkata Knight Riders':'KKR',
+  'Gujarat Titans':'GT','Punjab Kings':'PBKS','Mumbai Indians':'MI',
+  'Lucknow Super Giants':'LSG','Delhi Capitals':'DC',
+  'Chennai Super Kings':'CSK','Rajasthan Royals':'RR',
+  'Royal Challengers Bengaluru':'RCB'
+};
+
+const ALL_MDS = ['MD 1','MD 2','MD 3','MD 4','MD 5','MD 6','MD 7',
+                 'MD 8','MD 9','MD 10','MD 11','MD 12','MD 13','MD 14'];
+
+function num(v) {
+  if (v === null || v === undefined || v === '') return 0;
+  const n = parseFloat(String(v).replace(/,/g, ''));
+  return isNaN(n) ? 0 : n;
+}
+
+// ── DETECT PLAYED MDs DYNAMICALLY ─────────────────────────────────────────
+function detectPlayedMDs(players) {
+  return ALL_MDS.filter(md => players.filter(p => num(p[md]) > 0).length > 10);
+}
+
+// ── COMPOSITE SCORE ────────────────────────────────────────────────────────
+// = Weighted Recency Avg × (1 − Consistency Penalty + Momentum Bonus)
+function compositeScore(scores) {
+  if (!scores || scores.length === 0) return { score:0, wAvg:0, penalty:0, momentum:0 };
+  const recent = scores.length >= 4 ? scores.slice(-4) : scores;
+
+  // 1. Weighted recency average (oldest=1 … newest=n)
+  const weights = recent.map((_, i) => i + 1);
+  const wTotal  = weights.reduce((a, b) => a + b, 0);
+  const wAvg    = recent.reduce((s, v, i) => s + v * weights[i], 0) / wTotal;
+
+  // 2. Consistency penalty — coefficient of variation, capped at 15%
+  let penalty = 0;
+  if (recent.length > 1) {
+    const mean = recent.reduce((a, b) => a + b, 0) / recent.length;
+    const std  = Math.sqrt(recent.reduce((s, v) => s + (v - mean) ** 2, 0) / recent.length);
+    const cv   = mean > 0 ? std / mean : 0;
+    penalty    = Math.min(cv * 0.15, 0.15);
+  }
+
+  // 3. Momentum bonus — linear trend, capped at ±10%
+  let momentum = 0;
+  if (recent.length >= 2) {
+    const n     = recent.length;
+    const xMean = (n - 1) / 2;
+    const yMean = recent.reduce((a, b) => a + b, 0) / n;
+    const numV  = recent.reduce((s, y, i) => s + (i - xMean) * (y - yMean), 0);
+    const den   = recent.reduce((s, _, i) => s + (i - xMean) ** 2, 0);
+    const slope = den !== 0 ? numV / den : 0;
+    momentum    = Math.max(-0.10, Math.min(0.10, slope / (yMean + 1e-9) * 0.10));
+  }
+
+  const score = wAvg * (1 - penalty + momentum);
+  return {
+    score:    Math.round(score * 10) / 10,
+    wAvg:     Math.round(wAvg * 10) / 10,
+    penalty:  Math.round(penalty * 1000) / 10,
+    momentum: Math.round(momentum * 1000) / 10,
+  };
+}
+
+// ── BUILD PLAYER OBJECT ────────────────────────────────────────────────────
+function buildPlayer(row, playedMDs) {
+  const played     = num(row['Played']);
+  const total      = num(row['Total']);
+  const last4Total = num(row['Last 4']);
+  const allScores  = playedMDs.map(md => num(row[md])).filter(v => v > 0);
+  const recent     = allScores.length >= 4 ? allScores.slice(-4) : allScores;
+  const last4Games = recent.length;
+  const comp       = compositeScore(allScores);
+
+  return {
+    name:         row['Player']   || '',
+    team:         row['Team']     || '',
+    position:     row['Position'] || '',
+    price:        num(row['Price']),
+    status:       row['Status']   || '',
+    played, total,
+    avg:          played > 0 ? +(total / played).toFixed(1) : 0,
+    last4Total, last4Games,
+    last4Avg:     last4Games > 0 ? +(last4Total / last4Games).toFixed(1) : 0,
+    composite:    comp.score,
+    wAvg:         comp.wAvg,
+    penalty:      comp.penalty,
+    momentum:     comp.momentum,
+    recentScores: recent,
+  };
+}
+
+// ── RANKING LOGIC ──────────────────────────────────────────────────────────
+// ── DATE HELPER — only include fixtures from today onwards ────────────────
+function isTodayOrFuture(rawDate) {
+  if (!rawDate) return false;
+  try {
+    const d = new Date(rawDate);
+    if (isNaN(d)) return false;
+    // Compare date only (strip time) against today's date in local timezone
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    d.setHours(0, 0, 0, 0);
+    return d >= today;
+  } catch(e) { return false; }
+}
+
+function rankFixtures(players, fixtures, statusFilter, maxPlayers) {
+  const filtered = players.filter(p => p.status === statusFilter && p.total > 0);
+  const results  = [];
+
+  for (const fix of fixtures) {
+    const md    = parseInt(fix['#']);
+    const match = fix['Match'] || '';
+    if (!match || match.includes('TBD')) continue;
+    if (!isTodayOrFuture(fix['Date'])) continue;   // skip past fixtures
+
+    const teams = Object.entries(TEAM_MAP)
+      .filter(([full]) => match.includes(full))
+      .map(([, code]) => code);
+    if (teams.length < 2) continue;
+
+    const inMatch = filtered.filter(p =>
+      teams.includes(p.team) && (p.last4Games||0) >= 3  // must have played ≥3 of last 4 MDs
+    );
+    const topN    = inMatch.sort((a, b) => b.composite - a.composite).slice(0, maxPlayers);
+    if (!topN.length) continue;
+
+    const rawDate = fix['Date'] || '';
+    let dateStr = rawDate;
+    try {
+      const d = new Date(rawDate);
+      if (!isNaN(d)) dateStr = d.toLocaleDateString('en-IN', { day:'numeric', month:'short' });
+    } catch(e) {}
+
+    results.push({
+      md, date: dateStr, match,
+      score:   Math.round(topN.reduce((s, p) => s + p.composite, 0) * 10) / 10,
+      players: topN,
+    });
+  }
+  // Assign priority rank (1 = best composite score) before resorting by date
+  const byScore = [...results].sort((a, b) => b.score - a.score);
+  byScore.forEach((item, i) => { item.priority = i + 1; });
+
+  // Return ALL upcoming fixtures in chronological order
+  return results.sort((a, b) => a.md - b.md);
+}
+
+// ── RENDER HELPERS ─────────────────────────────────────────────────────────
+function posAbbr(pos) {
+  const m = { 'BATSMAN':'BAT','BOWLER':'BOWL','ALL ROUNDER':'AR','ALL-ROUNDER':'AR','WICKET KEEPER':'WK' };
+  return m[(pos||'').toUpperCase()] || (pos||'').substring(0,4).toUpperCase();
+}
+function rankClass(r) { return r===1?'rank-1':r===2?'rank-2':r===3?'rank-3':'rank-other'; }
+
+function momentumArrow(m) {
+  if (m >  2) return '<span style="color:#4ade80">▲</span>';
+  if (m < -2) return '<span style="color:#f87171">▼</span>';
+  return '<span style="color:#94a3b8">━</span>';
+}
+
+function buildPlayerRows(players) {
+  return players.map(p => `
+    <tr class="row-${p.team}">
+      <td>
+        <div class="player-name-cell">
+          <span class="team-dot team-${p.team}"></span>
+          <span class="pname">${p.name}</span>
+          <span class="team-tag tag-${p.team}">${p.team}</span>
+        </div>
+      </td>
+      <td><span class="pos-tag">${posAbbr(p.position)}</span></td>
+      <td class="price-text col-hide">₹${p.price}Cr</td>
+      <td class="center sep-col stat-played">${p.played}</td>
+      <td class="stat-total">${p.total}</td>
+      <td class="stat-avg col-hide">${p.avg}</td>
+      <td class="center sep-col stat-l4games">${p.last4Games}</td>
+      <td class="stat-l4total">${p.last4Total}</td>
+      <td class="stat-l4avg col-hide">${p.last4Avg}</td>
+      <td class="center sep-col" style="color:#c084fc;font-weight:700;font-size:1rem">${p.composite}</td>
+      <td class="col-hide" style="color:var(--text-secondary);font-size:0.82rem">${p.wAvg}</td>
+      <td class="center col-hide" style="color:#f87171;font-size:0.8rem">${p.penalty > 0 ? '-' + p.penalty + '%' : '—'}</td>
+      <td class="center col-hide">${momentumArrow(p.momentum)}<span style="font-size:0.75rem;color:var(--text-secondary);margin-left:2px">${p.momentum > 0 ? '+' : ''}${p.momentum}%</span></td>
+      <td class="col-hide" style="font-size:0.78rem;color:var(--text-secondary)">${(p.recentScores||[]).join(', ')}</td>
+    </tr>`).join('');
+}
+
+function buildCard(item, rank) {
+  const id       = 'card-' + rank + '-' + Math.random().toString(36).slice(2,6);
+  const search   = [item.match, item.date, ...item.players.map(p => p.name + ' ' + p.team)].join(' ').toLowerCase();
+  const priority = item.priority || rank;
+  const priClass = priority===1?'rank-1':priority===2?'rank-2':priority===3?'rank-3':'rank-other';
+  return `
+  <div class="match-card" id="${id}" data-search="${search}">
+    <div class="match-card-header" onclick="toggleCard('${id}')">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0">
+        <div style="font-size:0.62rem;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.4px">Game</div>
+        <div class="rank-circle rank-other" style="width:38px;height:38px;font-size:0.9rem">#${rank}</div>
+      </div>
+      <div class="match-meta">
+        <div class="match-md">MD #${item.md}</div>
+        <div class="match-name">${item.match}</div>
+        <div class="match-date">📅 ${item.date}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0">
+        <div style="font-size:0.62rem;color:var(--ipl-gold);text-transform:uppercase;letter-spacing:0.4px">Priority</div>
+        <div class="rank-circle ${priClass}" style="width:38px;height:38px;font-size:0.9rem">#${priority}</div>
+      </div>
+      <div class="match-score-block">
+        <div class="match-score-num">${item.score}</div>
+        <div class="match-score-lbl">Combined ⚡ Score</div>
+      </div>
+      <span class="expand-icon">▼</span>
+    </div>
+    <div class="players-section">
+      <div class="section-divider">
+        <span class="overall-badge">📊 Overall Form</span>
+        <span class="last4-badge">🔥 Last 4 Games</span>
+        <span style="background:rgba(192,132,252,0.15);color:#c084fc;font-size:0.75rem;font-weight:700;padding:3px 10px;border-radius:4px;text-transform:uppercase;letter-spacing:0.5px">⚡ Composite Score</span>
+      </div>
+      <table class="players-table">
+        <thead>
+          <tr>
+            <th colspan="2">Player</th>
+            <th class="col-hide">Price</th>
+            <th class="center sep-col overall-col" title="Total Games Played">GP</th>
+            <th class="overall-col">Total Pts</th>
+            <th class="overall-col col-hide">Avg/Game</th>
+            <th class="center sep-col last4-col" title="Games in Last 4 MDs">L4 GP</th>
+            <th class="last4-col">L4 Pts</th>
+            <th class="last4-col col-hide">L4 Avg</th>
+            <th class="center sep-col" style="color:#c084fc;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.5px" title="Weighted Avg × (1 − Variance + Momentum)">⚡ Score</th>
+            <th class="col-hide" style="color:#c084fc;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.5px" title="Weighted Recency Average">W.Avg</th>
+            <th class="center col-hide" style="color:#f87171;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.5px" title="Consistency penalty — higher = more volatile">Variance</th>
+            <th class="center col-hide" style="color:#4ade80;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.5px" title="Is the player trending up or down?">Trend</th>
+            <th class="col-hide" style="color:var(--text-secondary);font-size:0.72rem;text-transform:uppercase;letter-spacing:0.5px">Recent Scores</th>
+          </tr>
+        </thead>
+        <tbody>${buildPlayerRows(item.players)}</tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+function renderRankings(type, rankings, last4MDs) {
+  const container = document.getElementById('cards-' + type);
+  container.innerHTML = rankings.map((item, i) => buildCard(item, i + 1)).join('');
+  updateCount(type, rankings.length, rankings.length);
+  const info = document.getElementById('info-' + type);
+  info.innerHTML = `
+    <div class="info-chip">📅 <strong>${rankings.length}</strong> upcoming fixtures · shown in date order</div>
+    <div class="info-chip">🔥 Form window: <strong>${last4MDs.join(' · ')}</strong></div>
+    <div class="info-chip">⚡ <strong>Priority #</strong> = composite score rank (1 = best booster opportunity)</div>
+    <div class="info-chip">📊 Composite Score = Weighted Avg × (1 − Variance + Momentum)</div>`;
+}
+
+function toggleCard(id) { document.getElementById(id).classList.toggle('expanded'); }
+
+function filterCards(type) {
+  const q     = document.getElementById('search-' + type).value.toLowerCase().trim();
+  const cards = document.querySelectorAll('#cards-' + type + ' .match-card');
+  let vis = 0;
+  cards.forEach(c => {
+    const show = !q || c.getAttribute('data-search').includes(q);
+    c.style.display = show ? '' : 'none';
+    if (show) vis++;
+  });
+  updateCount(type, vis, cards.length);
+  const container = document.getElementById('cards-' + type);
+  let empty = container.querySelector('.empty');
+  if (vis === 0 && q) {
+    if (!empty) container.insertAdjacentHTML('beforeend',
+      `<div class="empty"><div class="icon">🔍</div><div>No matches for "<strong>${q}</strong>"</div></div>`);
+  } else if (empty) empty.remove();
+}
+
+function updateCount(type, vis, total) {
+  const el = document.getElementById('count-' + type);
+  if (el) el.textContent = vis < total ? `Showing ${vis} of ${total}` : `${total} matches`;
+}
+
+function switchTab(tab, btn) {
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('pane-' + tab).classList.add('active');
+  btn.classList.add('active');
+  // Transfer planner initialised via loadData
+}
+
+// ── PAST FIXTURES (for opponent weakness) ─────────────────────────────────
+const PAST_FIXTURES = [
+  [1,'DC','GT'],[2,'MI','RCB'],[3,'RCB','LSG'],[4,'GT','KKR'],
+  [5,'PBKS','LSG'],[6,'SRH','CSK'],[7,'KKR','RR'],[8,'SRH','DC'],
+  [9,'LSG','RR'],[10,'MI','CSK'],[11,'DC','PBKS'],[12,'CSK','KKR'],
+  [13,'RCB','LSG'],[14,'GT','MI'],[15,'PBKS','LSG'],[16,'KKR','RR'],
+  [17,'SRH','CSK'],[18,'RCB','DC'],[19,'GT','KKR'],[20,'SRH','RR'],
+  [21,'LSG','GT'],[22,'MI','RCB'],[23,'CSK','DC'],[24,'PBKS','SRH'],
+  [25,'RR','RCB'],[26,'KKR','LSG'],[27,'DC','GT'],[28,'RR','MI'],
+  [29,'SRH','KKR'],[30,'GT','PBKS'],
+];
+
+function buildTeamSchedule() {
+  const sched = {};
+  for (const [,home,away] of [...PAST_FIXTURES].sort((a,b)=>a[0]-b[0])) {
+    if (!sched[home]) sched[home] = [];
+    if (!sched[away]) sched[away] = [];
+    sched[home].push(away);
+    sched[away].push(home);
+  }
+  return sched;
+}
+
+function buildOpponentWeakness(players, playedMDs) {
+  const sched = buildTeamSchedule();
+  const conceded = {};
+  for (const p of players) {
+    const teamSched = sched[p.team] || [];
+    let gi = 0;
+    for (const md of playedMDs) {
+      const score = num(p._raw ? p._raw[md] : 0);
+      if (score > 0) {
+        const opp = teamSched[gi];
+        if (opp) { if (!conceded[opp]) conceded[opp]=[]; conceded[opp].push(score); }
+        gi++;
+      }
+    }
+  }
+  const weakness = {};
+  for (const [t,sc] of Object.entries(conceded))
+    weakness[t] = Math.round(sc.reduce((a,b)=>a+b,0)/sc.length*10)/10;
+  const vals = Object.values(weakness);
+  const wMin = Math.min(...vals), wMax = Math.max(...vals);
+  const norm = {};
+  for (const [t,v] of Object.entries(weakness))
+    norm[t] = wMax > wMin ? (v-wMin)/(wMax-wMin) : 0.5;
+  return { raw: weakness, norm };
+}
+
+function tcScore(player, opponent, oppWeakness) {
+  const oppNorm    = oppWeakness.norm[opponent] ?? 0.5;
+  const oppBonus   = oppNorm * 0.20;
+  const floorRatio = player.wAvg > 0 ? player.floor/player.wAvg : 0;
+  const floorPen   = floorRatio < 0.30 ? 0.15 : floorRatio < 0.50 ? 0.07 : 0;
+  return Math.round(player.composite * (1 + oppBonus - floorPen) * 10) / 10;
+}
+
+function buildTCReason(player, opponent, oppWeakness) {
+  const parts = [];
+  const oppRaw   = oppWeakness.raw[opponent] ?? 40;
+  const oppRanks = Object.entries(oppWeakness.raw).sort((a,b)=>b[1]-a[1]);
+  const oppPos   = oppRanks.findIndex(([t])=>t===opponent)+1;
+  const ordinals = ['weakest','2nd weakest','3rd weakest'];
+  if (oppPos<=3) parts.push(`${opponent} has the ${ordinals[oppPos-1]} defence in the tournament (avg ${oppRaw} pts conceded per player per game)`);
+  if (player.momentum >  3) parts.push(`Strong upward form — momentum is +${player.momentum}%, scoring is trending up`);
+  if (player.momentum < -3) parts.push(`⚠️ Downward trend — momentum is ${player.momentum}%, recent scores are falling`);
+  if (player.penalty  <  5) parts.push(`Highly consistent performer — only ${player.penalty}% variance between games`);
+  if (player.penalty  > 10) parts.push(`⚠️ Volatile scorer — ${player.penalty}% variance means their output is unpredictable`);
+  if (player.wAvg     > 80) parts.push(`Elite form — weighted average of ${player.wAvg} pts/game (recency-weighted)`);
+  const floorRatio = player.wAvg > 0 ? player.floor/player.wAvg : 0;
+  if (floorRatio > 0.6) parts.push(`Safe floor — worst recent game was ${player.floor} pts, which is ${Math.round(floorRatio*100)}% of their weighted average`);
+  if (floorRatio < 0.3) parts.push(`⚠️ Floor risk — worst recent game was only ${player.floor} pts vs a ${player.wAvg} weighted avg`);
+  if (player.played   <  3) parts.push(`⚠️ Thin data — only ${player.played} game(s) played so far. Treat with caution`);
+  return parts.length ? parts : [`Solid composite score of ${player.composite} against ${opponent}`];
+}
+
+function buildTCRankings(players, fixtures, oppWeakness) {
+  // Sort fixtures chronologically, take next 10 from today onwards
+  const upcoming = fixtures
+    .filter(fix => {
+      const match = fix['Match']||'';
+      return match && !match.includes('TBD') && isTodayOrFuture(fix['Date']);
+    })
+    .sort((a,b) => new Date(a['Date']) - new Date(b['Date']))
+    .slice(0, 10);
+
+  const fixtureGroups = [];
+
+  for (const fix of upcoming) {
+    const md    = parseInt(fix['#']);
+    const match = fix['Match']||'';
+    const teams = Object.entries(TEAM_MAP).filter(([f])=>match.includes(f)).map(([,c])=>c);
+    if (teams.length<2) continue;
+
+    const rawDate = fix['Date']||'';
+    let dateStr = rawDate;
+    try { const d=new Date(rawDate); if(!isNaN(d)) dateStr=d.toLocaleDateString('en-IN',{day:'numeric',month:'short'}); } catch(e){}
+
+    // Score every eligible player in this fixture
+    const candidates = [];
+    for (const p of players) {
+      if (!teams.includes(p.team)||p.total<=0||p.composite<=0) continue;
+      if ((p.last4Games||0) < 3) continue;   // must have played ≥3 of last 4 MDs
+      const opponent = teams.find(t=>t!==p.team);
+      if (!opponent) continue;
+      const tc      = tcScore(p,opponent,oppWeakness);
+      const reasons = buildTCReason(p,opponent,oppWeakness);
+      candidates.push({ md, date:dateStr, match, player:p, opponent, tc, reasons,
+        oppWeakRaw: oppWeakness.raw[opponent]??40 });
+    }
+
+    // Keep top 3 per fixture
+    const top3 = candidates.sort((a,b)=>b.tc-a.tc).slice(0,3);
+    if (top3.length) fixtureGroups.push({ md, date:dateStr, match, top3 });
+  }
+
+  return fixtureGroups;
+}
+
+function scoreBubbleClass(s,avg) { return s>=avg*0.8?'high':s>=avg*0.4?'mid':'low'; }
+
+function buildTCCard(item, rank) {
+  const p = item.player;
+  const id = 'tc-'+rank+'-'+Math.random().toString(36).slice(2,5);
+  const search = [p.name,p.team,item.match,item.date,item.opponent].join(' ').toLowerCase();
+  const rkCls = rank===1?'rank-1':rank===2?'rank-2':rank===3?'rank-3':'rank-other';
+  const cardBorder = rank<=3?`rank-${rank}-card`:'';
+  const floorRatio = p.wAvg>0?p.floor/p.wAvg:0;
+  const bubbles = (p.recentScores||[]).map((s,i,arr)=>{
+    const cls = scoreBubbleClass(s,p.wAvg);
+    const arrow = i<arr.length-1?`<span class="score-arrow"> › </span>`:'';
+    return `<div class="score-bubble ${cls}">${s}</div>${arrow}`;
+  }).join('');
+  const reasonHTML = item.reasons.map(r=>{
+    const warn = r.startsWith('⚠️');
+    return `<div class="tc-reason" style="${warn?'border-left-color:#f87171;color:#fca5a5;background:rgba(248,113,113,0.07)':''}">${r}</div>`;
+  }).join('');
+  const pills = [];
+  if (p.penalty < 5)      pills.push('<span class="tc-pill pill-green">✓ Consistent</span>');
+  if (p.penalty > 10)     pills.push('<span class="tc-pill pill-red">⚠ Volatile</span>');
+  if (p.momentum > 3)     pills.push('<span class="tc-pill pill-green">↑ In Form</span>');
+  if (p.momentum < -3)    pills.push('<span class="tc-pill pill-red">↓ Fading</span>');
+  if (floorRatio > 0.6)   pills.push('<span class="tc-pill pill-green">✓ Safe Floor</span>');
+  if (floorRatio < 0.3)   pills.push('<span class="tc-pill pill-red">⚠ Floor Risk</span>');
+  if (p.played < 3)       pills.push('<span class="tc-pill pill-yellow">⚠ Thin Data</span>');
+  pills.push(`<span class="tc-pill pill-purple">${posAbbr(p.position)}</span>`);
+  pills.push(`<span class="tc-pill pill-blue">vs ${item.opponent}</span>`);
+  return `
+  <div class="tc-card ${cardBorder}" id="${id}" data-search="${search}">
+    <div class="tc-header">
+      <div class="rank-circle ${rkCls}">#${rank}</div>
+      <div class="tc-player-block">
+        <div class="tc-player-name">${p.name}</div>
+        <div class="tc-player-meta">
+          <span class="team-tag tag-${p.team}">${p.team}</span>
+          <span class="pos-tag">${posAbbr(p.position)}</span>
+          <span style="font-size:0.78rem;color:var(--text-secondary)">₹${p.price}Cr</span>
+          <span style="font-size:0.78rem;color:var(--text-secondary)">${p.status}</span>
+        </div>
+        <div class="tc-match-line">📅 MD #${item.md} · ${item.date} &nbsp;·&nbsp; ${item.match}</div>
+      </div>
+      <div class="tc-score-block">
+        <div class="tc-score-num">${item.tc}</div>
+        <div class="tc-score-lbl">👑 TC Score</div>
+      </div>
+    </div>
+    <div class="tc-body">
+      ${reasonHTML}
+      <div class="tc-risk-bar">${pills.join('')}</div>
+      <div class="tc-stats-grid" style="margin-top:14px">
+        <div class="tc-stat-box"><div class="tc-stat-label">⚡ Composite</div><div class="tc-stat-value" style="color:#c084fc">${p.composite}</div><div class="tc-stat-sub">Overall form score</div></div>
+        <div class="tc-stat-box"><div class="tc-stat-label">📊 Weighted Avg</div><div class="tc-stat-value" style="color:var(--ipl-sky)">${p.wAvg}</div><div class="tc-stat-sub">Recency-weighted pts/game</div></div>
+        <div class="tc-stat-box"><div class="tc-stat-label">🏏 Total Pts</div><div class="tc-stat-value" style="color:var(--ipl-sky)">${p.total}</div><div class="tc-stat-sub">${p.played} games · avg ${p.avg}/game</div></div>
+        <div class="tc-stat-box"><div class="tc-stat-label">🔥 Last 4 Pts</div><div class="tc-stat-value" style="color:var(--ipl-gold)">${p.last4}</div><div class="tc-stat-sub">${p.last4Games} games · avg ${p.last4Avg}/game</div></div>
+        <div class="tc-stat-box"><div class="tc-stat-label">🛡 Opp Defence</div><div class="tc-stat-value" style="color:#fb923c">${item.oppWeakRaw}</div><div class="tc-stat-sub">Avg pts conceded vs ${item.opponent}</div></div>
+        <div class="tc-stat-box"><div class="tc-stat-label">📉 Floor</div><div class="tc-stat-value" style="color:${floorRatio>0.5?'#4ade80':'#f87171'}">${p.floor}</div><div class="tc-stat-sub">Worst of last ${p.recentScores?.length||0} games</div></div>
+      </div>
+      <div class="recent-scores">
+        <span class="recent-label">Recent:</span>
+        ${bubbles||'<span style="color:var(--text-secondary);font-size:0.82rem">No data</span>'}
+        <span style="font-size:0.75rem;color:var(--text-secondary);margin-left:6px">(oldest → newest)</span>
+      </div>
+    </div>
+  </div>`;
+}
+
+function buildFixtureHeader(group) {
+  return `
+  <div class="fixture-group-header">
+    <div class="fixture-group-badge">MD #${group.md}</div>
+    <div class="fixture-group-name">${group.match}</div>
+    <div class="fixture-group-date">📅 ${group.date}</div>
+  </div>`;
+}
+
+function renderTCRankings(fixtureGroups) {
+  const container = document.getElementById('cards-captain');
+
+  if (!fixtureGroups.length) {
+    container.innerHTML = '<div class="empty"><div class="icon">📅</div><div>No upcoming fixtures found</div></div>';
+    updateCount('captain', 0, 0);
+    return;
+  }
+
+  let html = '';
+  let totalCards = 0;
+  fixtureGroups.forEach(group => {
+    html += buildFixtureHeader(group);
+    group.top3.forEach((item, i) => {
+      html += buildTCCard(item, i + 1);
+      totalCards++;
+    });
+  });
+
+  container.innerHTML = html;
+  // Update search count based on total cards, not groups
+  const allCards = container.querySelectorAll('.tc-card');
+  updateCount('captain', allCards.length, allCards.length);
+  document.getElementById('info-captain').innerHTML = `
+    <div class="info-chip">👑 Top 3 captain picks for each of the next <strong>${fixtureGroups.length}</strong> fixtures</div>
+    <div class="info-chip">🧮 TC Score = Composite × (1 + Opp Weakness − Floor Risk)</div>
+    <div class="info-chip">✅ Players must have played ≥ 3 of last 4 games</div>
+    <div class="info-chip">🛡 Opponent weakness derived from ${PAST_FIXTURES.length} past matchups</div>`;
+}
+
+// ── APPS SCRIPT FETCH ──────────────────────────────────────────────────────
+async function fetchSheet(url) {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`HTTP ${res.status} fetching data`);
+  const json = await res.json();
+  if (json.error) throw new Error('Apps Script: ' + json.error);
+  return json.rows;
+}
+
+// Parse a published Google Sheets CSV URL into array of row objects
+function parseCSV(text) {
+  const lines = text.trim().split('\n');
+  if (lines.length < 2) return [];
+  const headers = splitRow(lines[0]);
+  return lines.slice(1).map(line => {
+    const vals = splitRow(line);
+    const obj = {};
+    headers.forEach((h, i) => { obj[h.trim()] = (vals[i] || '').trim(); });
+    return obj;
+  }).filter(row => Object.values(row).some(v => v !== ''));
+}
+
+function splitRow(row) {
+  const res = []; let cur = ''; let inQ = false;
+  for (const c of row) {
+    if (c === '"') { inQ = !inQ; }
+    else if (c === ',' && !inQ) { res.push(cur); cur = ''; }
+    else { cur += c; }
+  }
+  res.push(cur);
+  return res;
+}
+
+async function fetchCSV(url) {
+  const res = await fetch(url + '&cachebust=' + Date.now());
+  if (!res.ok) throw new Error(`HTTP ${res.status} fetching CSV`);
+  const text = await res.text();
+  return parseCSV(text);
+}
+
+
+// ── FOREIGN ROYALE — past game analysis ───────────────────────────────────
+// Past fixtures come directly from the FixtureList sheet (rawFixtures),
+// filtered to dates strictly before today. No hardcoded list needed.
+
+function buildPastTeamSchedules(rawFixtures) {
+  // Build per-team ordered game list from the sheet's FixtureList
+  // Sort by fixture number so MD1=first game, MD2=second, etc.
+  const sched = {};
+  const past  = rawFixtures
+    .filter(f => {
+      const match = f['Match'] || '';
+      if (!match || match.includes('TBD')) return false;
+      return !isTodayOrFuture(f['Date']); // past only
+    })
+    .sort((a, b) => parseInt(a['#']) - parseInt(b['#']));
+
+  for (const f of past) {
+    const fixNum  = parseInt(f['#']);
+    const match   = f['Match'] || '';
+    const dateRaw = f['Date']  || '';
+    let dateStr   = dateRaw;
+    try {
+      const d = new Date(dateRaw);
+      if (!isNaN(d)) dateStr = d.toLocaleDateString('en-IN', { day:'numeric', month:'short' });
+    } catch(e) {}
+
+    // Extract team codes from Home Team / Away Team columns
+    const homeFull = f['Home Team'] || '';
+    const awayFull = f['Away Team'] || '';
+    const home = Object.entries(TEAM_MAP).find(([full]) => homeFull.includes(full))?.[1] || '';
+    const away = Object.entries(TEAM_MAP).find(([full]) => awayFull.includes(full))?.[1] || '';
+    if (!home || !away) continue;
+
+    if (!sched[home]) sched[home] = [];
+    if (!sched[away]) sched[away] = [];
+    sched[home].push({ fix: fixNum, date: dateStr, opponent: away,  match });
+    sched[away].push({ fix: fixNum, date: dateStr, opponent: home,  match });
+  }
+  return sched;
+}
+
+function buildForeignRoyaleData(players, playedMDs, rawFixtures) {
+  const sched     = buildPastTeamSchedules(rawFixtures);
+  const foreigners = players.filter(p => p.status === 'Foreign' && p.total > 0);
+
+  // Map fixture_num -> { match info + player scores }
+  const fixtureScores = {};
+
+  for (const p of foreigners) {
+    const teamSched = sched[p.team] || [];
+    for (let i = 0; i < teamSched.length; i++) {
+      const md       = playedMDs[i];   // 'MD 1', 'MD 2', ...
+      if (!md) continue;
+      const rawScore = p._raw ? p._raw[md] : 0;
+      const score    = typeof rawScore === 'number' ? rawScore : parseFloat(rawScore) || 0;
+      if (score <= 0) continue;
+      const game = teamSched[i];
+      if (!fixtureScores[game.fix]) fixtureScores[game.fix] = { ...game, players: [] };
+      fixtureScores[game.fix].players.push({ name: p.name, team: p.team, score });
+    }
+  }
+
+  // Build top4 + scenarios per fixture, sorted by Actual total descending
+  const results = [];
+  for (const [fixNum, game] of Object.entries(fixtureScores)) {
+    const top4 = game.players.sort((a, b) => b.score - a.score).slice(0, 4);
+    if (top4.length < 2) continue;
+    const scores = top4.map(p => p.score);
+
+    // Best:  C=#1(×4), VC=#2(×3), rest ×2
+    const best   = scores[0]*4 + scores[1]*3 + scores.slice(2).reduce((a,b)=>a+(b*2),0);
+    // Worst: C=lowest(×4), VC=2nd lowest(×3), rest ×2
+    const asc    = [...scores].sort((a, b) => a - b);
+    const worst  = asc[0]*4 + asc[1]*3 + asc.slice(2).reduce((a,b)=>a+(b*2),0);
+    const actual = scores.reduce((a, b) => a + b, 0);
+
+    results.push({
+      fix: parseInt(fixNum), date: game.date, match: game.match,
+      top4, best, worst, actual,
+      searchStr: [game.match, game.date, ...top4.map(p => p.name + ' ' + p.team)].join(' ').toLowerCase()
+    });
+  }
+
+  // Sort by Actual total descending (best scoring games first)
+  return results.sort((a, b) => b.actual - a.actual);
+}
+
+function hrPlayerRow(p, rank, isBestC, isBestVC, isWorstC, isWorstVC) {
+  const rankCls   = ['hr-p1','hr-p2','hr-p3','hr-p4'][rank-1] || 'hr-p4';
+  const rankLabel = ['1st','2nd','3rd','4th'][rank-1];
+  let tags = '';
+  if (isBestC)   tags += '<span class="hr-multiplier hr-cap">👑 C (Best)</span>';
+  if (isBestVC)  tags += '<span class="hr-multiplier hr-vc">🥈 VC (Best)</span>';
+  if (isWorstC)  tags += '<span class="hr-multiplier hr-cap" style="opacity:0.5">👑 C (Worst)</span>';
+  if (isWorstVC) tags += '<span class="hr-multiplier hr-vc"  style="opacity:0.5">🥈 VC (Worst)</span>';
+  return `
+  <div class="hr-player-row">
+    <div class="hr-player-rank ${rankCls}">${rankLabel}</div>
+    <div>
+      <span class="player-name-cell" style="display:inline-flex;gap:6px;align-items:center">
+        <span class="team-dot team-${p.team}"></span>
+        <span class="hr-player-name">${p.name}</span>
+        <span class="team-tag tag-${p.team}">${p.team}</span>
+      </span>
+    </div>
+    <div style="margin-left:auto;display:flex;gap:6px;align-items:center">
+      ${tags}
+      <div class="hr-player-score">${p.score}</div>
+    </div>
+  </div>`;
+}
+
+function buildHRCard(game, idx) {
+  const id     = 'hr-' + idx + '-' + Math.random().toString(36).slice(2,5);
+  const top4   = game.top4;
+  const scores = top4.map(p => p.score);
+  const asc    = [...scores].map((s,i) => i).sort((a,b) => scores[a] - scores[b]);
+  const worstCIdx  = asc[0];
+  const worstVCIdx = asc[1];
+
+  const rows = top4.map((p, i) => hrPlayerRow(
+    p, i+1,
+    i === 0, i === 1,
+    i === worstCIdx, i === worstVCIdx
+  )).join('');
+
+  return `
+  <div class="hr-card" id="${id}" data-search="${game.searchStr}">
+    <div class="hr-header" onclick="this.closest('.hr-card').classList.toggle('expanded')">
+      <div class="rank-circle rank-other" style="font-size:0.8rem;width:42px;height:42px">#${idx}</div>
+      <div class="hr-match-info">
+        <div class="hr-match-num">Fixture #${game.fix}</div>
+        <div class="hr-match-name">${game.match}</div>
+        <div class="hr-match-date">📅 ${game.date}</div>
+      </div>
+      <div class="hr-scenarios">
+        <div class="hr-scenario hr-best">
+          <div class="hr-val">${game.best}</div>
+          <div class="hr-lbl">Best</div>
+        </div>
+        <div class="hr-scenario hr-actual">
+          <div class="hr-val">${game.actual}</div>
+          <div class="hr-lbl">Actual</div>
+        </div>
+        <div class="hr-scenario hr-worst">
+          <div class="hr-val">${game.worst}</div>
+          <div class="hr-lbl">Worst</div>
+        </div>
+      </div>
+      <span class="hr-expand">▼</span>
+    </div>
+    <div class="hr-body">
+      ${rows}
+      <div class="hr-scenario-note">
+        <strong style="color:#4ade80">Best case:</strong> Captain <strong>${top4[0].name}</strong>
+        (×4 = ${top4[0].score * 4} pts) + VC <strong>${top4[1].name}</strong>
+        (×3 = ${top4[1].score * 3} pts) + others ×2 = <strong>${game.best} total</strong><br>
+        <strong style="color:#f87171">Worst case:</strong> Captain <strong>${top4[worstCIdx].name}</strong>
+        (×4 = ${top4[worstCIdx].score * 4} pts) + VC <strong>${top4[worstVCIdx].name}</strong>
+        (×3 = ${top4[worstVCIdx].score * 3} pts) + others ×2 = <strong>${game.worst} total</strong>
+      </div>
+    </div>
+  </div>`;
+}
+
+let _hrAllData = [];
+
+function renderForeignRoyale(data) {
+  _hrAllData = data;
+  const container = document.getElementById('cards-history');
+  container.innerHTML = data.map((g, i) => buildHRCard(g, i+1)).join('');
+  document.getElementById('count-history').textContent = `${data.length} past fixtures`;
+  document.getElementById('info-history').innerHTML = `
+    <div class="info-chip">🏆 <strong>${data.length}</strong> past fixtures · sorted by highest Actual score</div>
+    <div class="info-chip">👑 Captain = 4× &nbsp;|&nbsp; 🥈 VC = 3× &nbsp;|&nbsp; Others = 2×</div>
+    <div class="info-chip">🟢 Best = C on #1, VC on #2 &nbsp;|&nbsp; 🔴 Worst = C on #4, VC on #3</div>
+    <div class="info-chip">📋 Click any fixture to expand player breakdown</div>`;
+}
+
+function filterHistory() {
+  const q     = document.getElementById('search-history').value.toLowerCase().trim();
+  const cards = document.querySelectorAll('#cards-history .hr-card');
+  let vis = 0;
+  cards.forEach(c => {
+    const show = !q || c.getAttribute('data-search').includes(q);
+    c.style.display = show ? '' : 'none';
+    if (show) vis++;
+  });
+  document.getElementById('count-history').textContent =
+    vis < cards.length ? `Showing ${vis} of ${cards.length} fixtures` : `${cards.length} past fixtures`;
+  const container = document.getElementById('cards-history');
+  let empty = container.querySelector('.empty');
+  if (vis === 0 && q) {
+    if (!empty) container.insertAdjacentHTML('beforeend',
+      `<div class="empty"><div class="icon">🔍</div><div>No matches for "<strong>${q}</strong>"</div></div>`);
+  } else if (empty) empty.remove();
+}
+
+
+// ── INDIAN ROYALE — past game analysis ────────────────────────────────────
+function buildIndianRoyaleData(players, playedMDs, rawFixtures) {
+  const sched   = buildPastTeamSchedules(rawFixtures); // reuse Foreign Royale's helper
+  const indians = players.filter(p => p.status === 'Indian' && p.total > 0);
+
+  // Map fixture_num -> { match info + all Indian player scores }
+  const fixtureScores = {};
+
+  for (const p of indians) {
+    const teamSched = sched[p.team] || [];
+    for (let i = 0; i < teamSched.length; i++) {
+      const md       = playedMDs[i];
+      if (!md) continue;
+      const rawScore = p._raw ? p._raw[md] : 0;
+      const score    = typeof rawScore === 'number' ? rawScore : parseFloat(rawScore) || 0;
+      if (score <= 0) continue;
+      const game = teamSched[i];
+      if (!fixtureScores[game.fix]) fixtureScores[game.fix] = { ...game, players: [] };
+      fixtureScores[game.fix].players.push({ name: p.name, team: p.team, score });
+    }
+  }
+
+  // For each fixture: apply max-7-per-team, pick top 11, compute scenarios
+  const results = [];
+  for (const [fixNum, game] of Object.entries(fixtureScores)) {
+    // Sort all Indians by score desc, apply max 7 per team
+    const allSorted = game.players.sort((a, b) => b.score - a.score);
+    const teamCount = {};
+    const top11 = [];
+    for (const p of allSorted) {
+      teamCount[p.team] = (teamCount[p.team] || 0);
+      if (teamCount[p.team] < 7) {
+        top11.push(p);
+        teamCount[p.team]++;
+      }
+      if (top11.length === 11) break;
+    }
+    if (top11.length < 2) continue;
+
+    const scores = top11.map(p => p.score);
+
+    // C=4x, VC=3x, all others=2x
+    const best  = scores[0]*4 + scores[1]*3 + scores.slice(2).reduce((a,b)=>a+(b*2),0);
+    const asc   = [...scores].sort((a,b)=>a-b);
+    const worst = asc[0]*4 + asc[1]*3 + asc.slice(2).reduce((a,b)=>a+(b*2),0);
+    const actual = scores.reduce((a,b)=>a+b,0);
+
+    results.push({
+      fix: parseInt(fixNum), date: game.date, match: game.match,
+      top11, best, worst, actual,
+      teamCount,
+      searchStr: [game.match, game.date, ...top11.map(p=>p.name+' '+p.team)].join(' ').toLowerCase()
+    });
+  }
+
+  // Sort by Actual total descending
+  return results.sort((a,b) => b.actual - a.actual);
+}
+
+function irPlayerRow(p, rank, isBestC, isBestVC, isWorstC, isWorstVC) {
+  const rankLabels = ['1st','2nd','3rd','4th','5th','6th','7th','8th','9th','10th','11th'];
+  const rankColors = [
+    'hr-p1','hr-p2','hr-p3','hr-p4',
+    'hr-p4','hr-p4','hr-p4','hr-p4','hr-p4','hr-p4','hr-p4'
+  ];
+  const rankCls   = rankColors[rank-1] || 'hr-p4';
+  const rankLabel = rankLabels[rank-1] || `${rank}th`;
+  let tags = '';
+  if (isBestC)   tags += '<span class="hr-multiplier hr-cap">👑 C (Best)</span>';
+  if (isBestVC)  tags += '<span class="hr-multiplier hr-vc">🥈 VC (Best)</span>';
+  if (isWorstC)  tags += '<span class="hr-multiplier hr-cap" style="opacity:0.5">👑 C (Worst)</span>';
+  if (isWorstVC) tags += '<span class="hr-multiplier hr-vc"  style="opacity:0.5">🥈 VC (Worst)</span>';
+  if (!isBestC && !isBestVC && !isWorstC && !isWorstVC)
+    tags += '<span class="hr-multiplier" style="background:rgba(79,145,205,0.15);color:var(--ipl-sky);border:1px solid rgba(79,145,205,0.3)">×2</span>';
+  return `
+  <div class="hr-player-row">
+    <div class="hr-player-rank ${rankCls}">${rankLabel}</div>
+    <div>
+      <span class="player-name-cell" style="display:inline-flex;gap:6px;align-items:center">
+        <span class="team-dot team-${p.team}"></span>
+        <span class="hr-player-name">${p.name}</span>
+        <span class="team-tag tag-${p.team}">${p.team}</span>
+      </span>
+    </div>
+    <div style="margin-left:auto;display:flex;gap:6px;align-items:center">
+      ${tags}
+      <div class="hr-player-score">${p.score}</div>
+    </div>
+  </div>`;
+}
+
+function buildIRCard(game, idx) {
+  const id     = 'ir-' + idx + '-' + Math.random().toString(36).slice(2,5);
+  const top11  = game.top11;
+  const scores = top11.map(p => p.score);
+  const asc    = [...scores].map((s,i)=>i).sort((a,b)=>scores[a]-scores[b]);
+  const worstCIdx  = asc[0];
+  const worstVCIdx = asc[1];
+
+  // Show team distribution
+  const teamDist = Object.entries(game.teamCount)
+    .sort((a,b)=>b[1]-a[1])
+    .map(([t,c])=>`<span class="team-tag tag-${t}" style="font-size:0.68rem">${t}: ${c}</span>`)
+    .join('');
+
+  const rows = top11.map((p, i) => irPlayerRow(
+    p, i+1,
+    i===0, i===1,
+    i===worstCIdx, i===worstVCIdx
+  )).join('');
+
+  return `
+  <div class="hr-card" id="${id}" data-search="${game.searchStr}">
+    <div class="hr-header" onclick="this.closest('.hr-card').classList.toggle('expanded')">
+      <div class="rank-circle rank-other" style="font-size:0.8rem;width:42px;height:42px">#${idx}</div>
+      <div class="hr-match-info">
+        <div class="hr-match-num">Fixture #${game.fix}</div>
+        <div class="hr-match-name">${game.match}</div>
+        <div class="hr-match-date">📅 ${game.date}</div>
+      </div>
+      <div class="hr-scenarios">
+        <div class="hr-scenario hr-best">
+          <div class="hr-val">${game.best}</div>
+          <div class="hr-lbl">Best</div>
+        </div>
+        <div class="hr-scenario hr-actual">
+          <div class="hr-val">${game.actual}</div>
+          <div class="hr-lbl">Actual</div>
+        </div>
+        <div class="hr-scenario hr-worst">
+          <div class="hr-val">${game.worst}</div>
+          <div class="hr-lbl">Worst</div>
+        </div>
+      </div>
+      <span class="hr-expand">▼</span>
+    </div>
+    <div class="hr-body">
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;align-items:center">
+        <span style="font-size:0.72rem;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.4px;">Team split:</span>
+        ${teamDist}
+      </div>
+      ${rows}
+      <div class="hr-scenario-note">
+        <strong style="color:#4ade80">Best case:</strong> Captain <strong>${top11[0].name}</strong>
+        (×4 = ${top11[0].score*4} pts) + VC <strong>${top11[1].name}</strong>
+        (×3 = ${top11[1].score*3} pts) + other 9 players ×2 = <strong>${game.best} total</strong><br>
+        <strong style="color:#f87171">Worst case:</strong> Captain <strong>${top11[worstCIdx].name}</strong>
+        (×4 = ${top11[worstCIdx].score*4} pts) + VC <strong>${top11[worstVCIdx].name}</strong>
+        (×3 = ${top11[worstVCIdx].score*3} pts) + other 9 players ×2 = <strong>${game.worst} total</strong>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderIndianRoyale(data) {
+  const container = document.getElementById('cards-indianroyale');
+  container.innerHTML = data.map((g,i) => buildIRCard(g, i+1)).join('');
+  document.getElementById('count-indianroyale').textContent = `${data.length} past fixtures`;
+  document.getElementById('info-indianroyale').innerHTML = `
+    <div class="info-chip">🇮🇳 <strong>${data.length}</strong> past fixtures · sorted by highest Actual score</div>
+    <div class="info-chip">👑 Captain = 4× &nbsp;|&nbsp; 🥈 VC = 3× &nbsp;|&nbsp; Others (×9) = 2× each</div>
+    <div class="info-chip">✅ Max 7 players from one team &nbsp;|&nbsp; Top 11 Indians selected per game</div>
+    <div class="info-chip">🟢 Best = C on #1, VC on #2 &nbsp;|&nbsp; 🔴 Worst = C on #11, VC on #10</div>`;
+}
+
+function filterIndianRoyale() {
+  const q     = document.getElementById('search-indianroyale').value.toLowerCase().trim();
+  const cards = document.querySelectorAll('#cards-indianroyale .hr-card');
+  let vis = 0;
+  cards.forEach(c => {
+    const show = !q || c.getAttribute('data-search').includes(q);
+    c.style.display = show ? '' : 'none';
+    if (show) vis++;
+  });
+  document.getElementById('count-indianroyale').textContent =
+    vis < cards.length ? `Showing ${vis} of ${cards.length} fixtures` : `${cards.length} past fixtures`;
+  const container = document.getElementById('cards-indianroyale');
+  let empty = container.querySelector('.empty');
+  if (vis === 0 && q) {
+    if (!empty) container.insertAdjacentHTML('beforeend',
+      `<div class="empty"><div class="icon">🔍</div><div>No matches for "<strong>${q}</strong>"</div></div>`);
+  } else if (empty) empty.remove();
+}
+
+
+// ── TRANSFER PLANNER ──────────────────────────────────────────────────────
+const TP_STATIC = {"currentTeam": [{"name": "KL Rahul", "team": "DC", "position": "WICKET KEEPER", "status": "Indian", "price": 10.0, "composite": 81.42, "wAvg": 93.1, "penalty": 12.0, "momentum": -0.5, "days_away": 1, "next_fix": 51, "next_match": "Delhi Capitals vs Kolkata Knight Riders", "next_date": "2026-05-08", "last4": 326, "played": 9, "avg": 72.8, "last4_games": 3, "total": 655, "es": 89.56}, {"name": "Prabhsimran Singh", "team": "PBKS", "position": "WICKET KEEPER", "status": "Indian", "price": 9.0, "composite": 51.09, "wAvg": 57.9, "penalty": 11.6, "momentum": -0.1, "days_away": 4, "next_fix": 55, "next_match": "Punjab Kings vs Delhi Capitals", "next_date": "2026-05-11", "last4": 223, "played": 9, "avg": 64.2, "last4_games": 3, "total": 578, "es": 35.76}, {"name": "Shreyas Iyer", "team": "PBKS", "position": "BATSMAN", "status": "Indian", "price": 10.5, "composite": 47.23, "wAvg": 52.8, "penalty": 10.3, "momentum": -0.3, "days_away": 4, "next_fix": 55, "next_match": "Punjab Kings vs Delhi Capitals", "next_date": "2026-05-11", "last4": 197, "played": 9, "avg": 59.2, "last4_games": 3, "total": 533, "es": 33.06}, {"name": "Travis Head", "team": "SRH", "position": "BATSMAN", "status": "Foreign", "price": 10.0, "composite": 75.27, "wAvg": 79.5, "penalty": 8.6, "momentum": 3.3, "days_away": 5, "next_fix": 56, "next_match": "Gujarat Titans vs Sunrisers Hyderabad", "next_date": "2026-05-12", "last4": 273, "played": 10, "avg": 48.8, "last4_games": 4, "total": 488, "es": 37.63}, {"name": "Priyansh Arya", "team": "PBKS", "position": "BATSMAN", "status": "Indian", "price": 9.5, "composite": 35.84, "wAvg": 43.3, "penalty": 10.9, "momentum": -6.4, "days_away": 4, "next_fix": 55, "next_match": "Punjab Kings vs Delhi Capitals", "next_date": "2026-05-11", "last4": 121, "played": 8, "avg": 55.5, "last4_games": 3, "total": 444, "es": 25.09}, {"name": "Abhishek Sharma", "team": "SRH", "position": "ALL ROUNDER", "status": "Indian", "price": 10.5, "composite": 60.62, "wAvg": 71.8, "penalty": 10.0, "momentum": -5.6, "days_away": 5, "next_fix": 56, "next_match": "Gujarat Titans vs Sunrisers Hyderabad", "next_date": "2026-05-12", "last4": 398, "played": 10, "avg": 70.1, "last4_games": 4, "total": 701, "es": 30.31}, {"name": "Cooper Connolly", "team": "PBKS", "position": "ALL ROUNDER", "status": "Foreign", "price": 7.5, "composite": 34.62, "wAvg": 41.5, "penalty": 11.2, "momentum": -5.4, "days_away": 4, "next_fix": 55, "next_match": "Punjab Kings vs Delhi Capitals", "next_date": "2026-05-11", "last4": 100, "played": 9, "avg": 49.8, "last4_games": 3, "total": 448, "es": 24.23}, {"name": "Mitchell Marsh", "team": "LSG", "position": "ALL ROUNDER", "status": "Foreign", "price": 10.0, "composite": 44.95, "wAvg": 49.4, "penalty": 6.9, "momentum": -2.1, "days_away": 0, "next_fix": 50, "next_match": "Lucknow Super Giants vs Royal Challengers Bengaluru", "next_date": "2026-05-07", "last4": 93, "played": 8, "avg": 41.8, "last4_games": 2, "total": 334, "es": 58.44}, {"name": "Anshul Kamboj", "team": "CSK", "position": "BOWLER", "status": "Indian", "price": 8.5, "composite": 43.05, "wAvg": 49.7, "penalty": 9.4, "momentum": -4.0, "days_away": 3, "next_fix": 53, "next_match": "Chennai Super Kings vs Lucknow Super Giants", "next_date": "2026-05-10", "last4": 142, "played": 9, "avg": 62.0, "last4_games": 3, "total": 558, "es": 36.59}, {"name": "Prince Yadav", "team": "LSG", "position": "BOWLER", "status": "Indian", "price": 7.0, "composite": 35.75, "wAvg": 41.1, "penalty": 8.4, "momentum": -4.6, "days_away": 0, "next_fix": 50, "next_match": "Lucknow Super Giants vs Royal Challengers Bengaluru", "next_date": "2026-05-07", "last4": 68, "played": 8, "avg": 51.1, "last4_games": 2, "total": 409, "es": 46.48}, {"name": "T Natarajan", "team": "DC", "position": "BOWLER", "status": "Indian", "price": 7.5, "composite": 13.6, "wAvg": 14.4, "penalty": 9.1, "momentum": 3.5, "days_away": 1, "next_fix": 51, "next_match": "Delhi Capitals vs Kolkata Knight Riders", "next_date": "2026-05-08", "last4": 33, "played": 7, "avg": 23.1, "last4_games": 2, "total": 162, "es": 14.96}], "transferPlans": {"1": [{"out": {"name": "T Natarajan", "team": "DC", "position": "BOWLER", "status": "Indian", "price": 7.5, "composite": 13.6, "wAvg": 14.4, "days_away": 1, "next_match": "Delhi Capitals vs Kolkata Knight Riders", "next_date": "2026-05-08", "last4": 33, "total": 162, "es": 14.96}, "options": [{"name": "Mohsin Khan", "team": "LSG", "position": "BOWLER", "status": "Indian", "price": 7.5, "composite": 94.64, "wAvg": 99.3, "days_away": 0, "next_match": "Lucknow Super Giants vs Royal Challengers Bengaluru", "next_date": "2026-05-07", "last4": 241, "total": 323, "es": 123.03, "last4_games": 2}, {"name": "Rasikh Salam", "team": "RCB", "position": "BOWLER", "status": "Indian", "price": 7.5, "composite": 19.68, "wAvg": 25.4, "days_away": 0, "next_match": "Lucknow Super Giants vs Royal Challengers Bengaluru", "next_date": "2026-05-07", "last4": 31, "total": 200, "es": 25.58, "last4_games": 2}], "budget_after": 0.0}], "2": [{"out": {"name": "T Natarajan", "team": "DC", "position": "BOWLER", "status": "Indian", "price": 7.5, "composite": 13.6, "wAvg": 14.4, "days_away": 1, "next_match": "Delhi Capitals vs Kolkata Knight Riders", "next_date": "2026-05-08", "last4": 33, "total": 162, "es": 14.96}, "options": [{"name": "Mohsin Khan", "team": "LSG", "position": "BOWLER", "status": "Indian", "price": 7.5, "composite": 94.64, "wAvg": 99.3, "days_away": 0, "next_match": "Lucknow Super Giants vs Royal Challengers Bengaluru", "next_date": "2026-05-07", "last4": 241, "total": 323, "es": 123.03, "last4_games": 2}, {"name": "Bhuvneshwar Kumar", "team": "RCB", "position": "BOWLER", "status": "Indian", "price": 9.0, "composite": 83.82, "wAvg": 87.7, "days_away": 0, "next_match": "Lucknow Super Giants vs Royal Challengers Bengaluru", "next_date": "2026-05-07", "last4": 234, "total": 559, "es": 108.97, "last4_games": 3}, {"name": "Josh Hazlewood", "team": "RCB", "position": "BOWLER", "status": "Foreign", "price": 10.0, "composite": 42.8, "wAvg": 49.2, "days_away": 0, "next_match": "Lucknow Super Giants vs Royal Challengers Bengaluru", "next_date": "2026-05-07", "last4": 175, "total": 278, "es": 55.64, "last4_games": 3}], "budget_after": 7.5}, {"out": {"name": "Cooper Connolly", "team": "PBKS", "position": "ALL ROUNDER", "status": "Foreign", "price": 7.5, "composite": 34.62, "wAvg": 41.5, "days_away": 4, "next_match": "Punjab Kings vs Delhi Capitals", "next_date": "2026-05-11", "last4": 100, "total": 448, "es": 24.23}, "options": [], "budget_after": 7.5}], "3": [{"out": {"name": "T Natarajan", "team": "DC", "position": "BOWLER", "status": "Indian", "price": 7.5, "composite": 13.6, "wAvg": 14.4, "days_away": 1, "next_match": "Delhi Capitals vs Kolkata Knight Riders", "next_date": "2026-05-08", "last4": 33, "total": 162, "es": 14.96}, "options": [{"name": "Mohsin Khan", "team": "LSG", "position": "BOWLER", "status": "Indian", "price": 7.5, "composite": 94.64, "wAvg": 99.3, "days_away": 0, "next_match": "Lucknow Super Giants vs Royal Challengers Bengaluru", "next_date": "2026-05-07", "last4": 241, "total": 323, "es": 123.03, "last4_games": 2}, {"name": "Bhuvneshwar Kumar", "team": "RCB", "position": "BOWLER", "status": "Indian", "price": 9.0, "composite": 83.82, "wAvg": 87.7, "days_away": 0, "next_match": "Lucknow Super Giants vs Royal Challengers Bengaluru", "next_date": "2026-05-07", "last4": 234, "total": 559, "es": 108.97, "last4_games": 3}, {"name": "Josh Hazlewood", "team": "RCB", "position": "BOWLER", "status": "Foreign", "price": 10.0, "composite": 42.8, "wAvg": 49.2, "days_away": 0, "next_match": "Lucknow Super Giants vs Royal Challengers Bengaluru", "next_date": "2026-05-07", "last4": 175, "total": 278, "es": 55.64, "last4_games": 3}], "budget_after": 17.0}, {"out": {"name": "Cooper Connolly", "team": "PBKS", "position": "ALL ROUNDER", "status": "Foreign", "price": 7.5, "composite": 34.62, "wAvg": 41.5, "days_away": 4, "next_match": "Punjab Kings vs Delhi Capitals", "next_date": "2026-05-11", "last4": 100, "total": 448, "es": 24.23}, "options": [{"name": "Aiden Markram", "team": "LSG", "position": "ALL ROUNDER", "status": "Foreign", "price": 10.0, "composite": 35.73, "wAvg": 39.8, "days_away": 0, "next_match": "Lucknow Super Giants vs Royal Challengers Bengaluru", "next_date": "2026-05-07", "last4": 59, "total": 338, "es": 46.45, "last4_games": 2}, {"name": "Romario Shepherd", "team": "RCB", "position": "ALL ROUNDER", "status": "Foreign", "price": 8.5, "composite": 33.3, "wAvg": 35.1, "days_away": 0, "next_match": "Lucknow Super Giants vs Royal Challengers Bengaluru", "next_date": "2026-05-07", "last4": 89, "total": 246, "es": 43.29, "last4_games": 3}, {"name": "Krunal Pandya", "team": "RCB", "position": "ALL ROUNDER", "status": "Indian", "price": 9.0, "composite": 24.75, "wAvg": 27.4, "days_away": 0, "next_match": "Lucknow Super Giants vs Royal Challengers Bengaluru", "next_date": "2026-05-07", "last4": 84, "total": 331, "es": 32.18, "last4_games": 3}], "budget_after": 7.0}, {"out": {"name": "Priyansh Arya", "team": "PBKS", "position": "BATSMAN", "status": "Indian", "price": 9.5, "composite": 35.84, "wAvg": 43.3, "days_away": 4, "next_match": "Punjab Kings vs Delhi Capitals", "next_date": "2026-05-11", "last4": 121, "total": 444, "es": 25.09}, "options": [{"name": "Himmat Singh", "team": "LSG", "position": "BATSMAN", "status": "Indian", "price": 7.0, "composite": 20.33, "wAvg": 21.3, "days_away": 0, "next_match": "Lucknow Super Giants vs Royal Challengers Bengaluru", "next_date": "2026-05-07", "last4": 54, "total": 67, "es": 26.43, "last4_games": 2}], "budget_after": 0.0}], "4": [{"out": {"name": "T Natarajan", "team": "DC", "position": "BOWLER", "status": "Indian", "price": 7.5, "composite": 13.6, "wAvg": 14.4, "days_away": 1, "next_match": "Delhi Capitals vs Kolkata Knight Riders", "next_date": "2026-05-08", "last4": 33, "total": 162, "es": 14.96}, "options": [{"name": "Mohsin Khan", "team": "LSG", "position": "BOWLER", "status": "Indian", "price": 7.5, "composite": 94.64, "wAvg": 99.3, "days_away": 0, "next_match": "Lucknow Super Giants vs Royal Challengers Bengaluru", "next_date": "2026-05-07", "last4": 241, "total": 323, "es": 123.03, "last4_games": 2}, {"name": "Bhuvneshwar Kumar", "team": "RCB", "position": "BOWLER", "status": "Indian", "price": 9.0, "composite": 83.82, "wAvg": 87.7, "days_away": 0, "next_match": "Lucknow Super Giants vs Royal Challengers Bengaluru", "next_date": "2026-05-07", "last4": 234, "total": 559, "es": 108.97, "last4_games": 3}, {"name": "Josh Hazlewood", "team": "RCB", "position": "BOWLER", "status": "Foreign", "price": 10.0, "composite": 42.8, "wAvg": 49.2, "days_away": 0, "next_match": "Lucknow Super Giants vs Royal Challengers Bengaluru", "next_date": "2026-05-07", "last4": 175, "total": 278, "es": 55.64, "last4_games": 3}], "budget_after": 27.5}, {"out": {"name": "Cooper Connolly", "team": "PBKS", "position": "ALL ROUNDER", "status": "Foreign", "price": 7.5, "composite": 34.62, "wAvg": 41.5, "days_away": 4, "next_match": "Punjab Kings vs Delhi Capitals", "next_date": "2026-05-11", "last4": 100, "total": 448, "es": 24.23}, "options": [{"name": "Aiden Markram", "team": "LSG", "position": "ALL ROUNDER", "status": "Foreign", "price": 10.0, "composite": 35.73, "wAvg": 39.8, "days_away": 0, "next_match": "Lucknow Super Giants vs Royal Challengers Bengaluru", "next_date": "2026-05-07", "last4": 59, "total": 338, "es": 46.45, "last4_games": 2}, {"name": "Romario Shepherd", "team": "RCB", "position": "ALL ROUNDER", "status": "Foreign", "price": 8.5, "composite": 33.3, "wAvg": 35.1, "days_away": 0, "next_match": "Lucknow Super Giants vs Royal Challengers Bengaluru", "next_date": "2026-05-07", "last4": 89, "total": 246, "es": 43.29, "last4_games": 3}, {"name": "Krunal Pandya", "team": "RCB", "position": "ALL ROUNDER", "status": "Indian", "price": 9.0, "composite": 24.75, "wAvg": 27.4, "days_away": 0, "next_match": "Lucknow Super Giants vs Royal Challengers Bengaluru", "next_date": "2026-05-07", "last4": 84, "total": 331, "es": 32.18, "last4_games": 3}], "budget_after": 17.5}, {"out": {"name": "Priyansh Arya", "team": "PBKS", "position": "BATSMAN", "status": "Indian", "price": 9.5, "composite": 35.84, "wAvg": 43.3, "days_away": 4, "next_match": "Punjab Kings vs Delhi Capitals", "next_date": "2026-05-11", "last4": 121, "total": 444, "es": 25.09}, "options": [{"name": "Devdutt Padikkal", "team": "RCB", "position": "BATSMAN", "status": "Indian", "price": 9.0, "composite": 68.34, "wAvg": 71.2, "days_away": 0, "next_match": "Lucknow Super Giants vs Royal Challengers Bengaluru", "next_date": "2026-05-07", "last4": 237, "total": 527, "es": 88.84, "last4_games": 3}, {"name": "Virat Kohli", "team": "RCB", "position": "BATSMAN", "status": "Indian", "price": 11.0, "composite": 53.56, "wAvg": 58.6, "days_away": 0, "next_match": "Lucknow Super Giants vs Royal Challengers Bengaluru", "next_date": "2026-05-07", "last4": 204, "total": 597, "es": 69.63, "last4_games": 3}, {"name": "Ayush Badoni", "team": "LSG", "position": "BATSMAN", "status": "Indian", "price": 9.0, "composite": 29.31, "wAvg": 33.0, "days_away": 0, "next_match": "Lucknow Super Giants vs Royal Challengers Bengaluru", "next_date": "2026-05-07", "last4": 42, "total": 266, "es": 38.1, "last4_games": 2}], "budget_after": 8.5}, {"out": {"name": "Abhishek Sharma", "team": "SRH", "position": "ALL ROUNDER", "status": "Indian", "price": 10.5, "composite": 60.62, "wAvg": 71.8, "days_away": 5, "next_match": "Gujarat Titans vs Sunrisers Hyderabad", "next_date": "2026-05-12", "last4": 398, "total": 701, "es": 30.31}, "options": [{"name": "Romario Shepherd", "team": "RCB", "position": "ALL ROUNDER", "status": "Foreign", "price": 8.5, "composite": 33.3, "wAvg": 35.1, "days_away": 0, "next_match": "Lucknow Super Giants vs Royal Challengers Bengaluru", "next_date": "2026-05-07", "last4": 89, "total": 246, "es": 43.29, "last4_games": 3}], "budget_after": 0.0}], "5": [{"out": {"name": "T Natarajan", "team": "DC", "position": "BOWLER", "status": "Indian", "price": 7.5, "composite": 13.6, "wAvg": 14.4, "days_away": 1, "next_match": "Delhi Capitals vs Kolkata Knight Riders", "next_date": "2026-05-08", "last4": 33, "total": 162, "es": 14.96}, "options": [{"name": "Mohsin Khan", "team": "LSG", "position": "BOWLER", "status": "Indian", "price": 7.5, "composite": 94.64, "wAvg": 99.3, "days_away": 0, "next_match": "Lucknow Super Giants vs Royal Challengers Bengaluru", "next_date": "2026-05-07", "last4": 241, "total": 323, "es": 123.03, "last4_games": 2}, {"name": "Bhuvneshwar Kumar", "team": "RCB", "position": "BOWLER", "status": "Indian", "price": 9.0, "composite": 83.82, "wAvg": 87.7, "days_away": 0, "next_match": "Lucknow Super Giants vs Royal Challengers Bengaluru", "next_date": "2026-05-07", "last4": 234, "total": 559, "es": 108.97, "last4_games": 3}, {"name": "Josh Hazlewood", "team": "RCB", "position": "BOWLER", "status": "Foreign", "price": 10.0, "composite": 42.8, "wAvg": 49.2, "days_away": 0, "next_match": "Lucknow Super Giants vs Royal Challengers Bengaluru", "next_date": "2026-05-07", "last4": 175, "total": 278, "es": 55.64, "last4_games": 3}], "budget_after": 38.0}, {"out": {"name": "Cooper Connolly", "team": "PBKS", "position": "ALL ROUNDER", "status": "Foreign", "price": 7.5, "composite": 34.62, "wAvg": 41.5, "days_away": 4, "next_match": "Punjab Kings vs Delhi Capitals", "next_date": "2026-05-11", "last4": 100, "total": 448, "es": 24.23}, "options": [{"name": "Aiden Markram", "team": "LSG", "position": "ALL ROUNDER", "status": "Foreign", "price": 10.0, "composite": 35.73, "wAvg": 39.8, "days_away": 0, "next_match": "Lucknow Super Giants vs Royal Challengers Bengaluru", "next_date": "2026-05-07", "last4": 59, "total": 338, "es": 46.45, "last4_games": 2}, {"name": "Romario Shepherd", "team": "RCB", "position": "ALL ROUNDER", "status": "Foreign", "price": 8.5, "composite": 33.3, "wAvg": 35.1, "days_away": 0, "next_match": "Lucknow Super Giants vs Royal Challengers Bengaluru", "next_date": "2026-05-07", "last4": 89, "total": 246, "es": 43.29, "last4_games": 3}, {"name": "Krunal Pandya", "team": "RCB", "position": "ALL ROUNDER", "status": "Indian", "price": 9.0, "composite": 24.75, "wAvg": 27.4, "days_away": 0, "next_match": "Lucknow Super Giants vs Royal Challengers Bengaluru", "next_date": "2026-05-07", "last4": 84, "total": 331, "es": 32.18, "last4_games": 3}], "budget_after": 28.0}, {"out": {"name": "Priyansh Arya", "team": "PBKS", "position": "BATSMAN", "status": "Indian", "price": 9.5, "composite": 35.84, "wAvg": 43.3, "days_away": 4, "next_match": "Punjab Kings vs Delhi Capitals", "next_date": "2026-05-11", "last4": 121, "total": 444, "es": 25.09}, "options": [{"name": "Devdutt Padikkal", "team": "RCB", "position": "BATSMAN", "status": "Indian", "price": 9.0, "composite": 68.34, "wAvg": 71.2, "days_away": 0, "next_match": "Lucknow Super Giants vs Royal Challengers Bengaluru", "next_date": "2026-05-07", "last4": 237, "total": 527, "es": 88.84, "last4_games": 3}, {"name": "Virat Kohli", "team": "RCB", "position": "BATSMAN", "status": "Indian", "price": 11.0, "composite": 53.56, "wAvg": 58.6, "days_away": 0, "next_match": "Lucknow Super Giants vs Royal Challengers Bengaluru", "next_date": "2026-05-07", "last4": 204, "total": 597, "es": 69.63, "last4_games": 3}, {"name": "Ayush Badoni", "team": "LSG", "position": "BATSMAN", "status": "Indian", "price": 9.0, "composite": 29.31, "wAvg": 33.0, "days_away": 0, "next_match": "Lucknow Super Giants vs Royal Challengers Bengaluru", "next_date": "2026-05-07", "last4": 42, "total": 266, "es": 38.1, "last4_games": 2}], "budget_after": 19.0}, {"out": {"name": "Abhishek Sharma", "team": "SRH", "position": "ALL ROUNDER", "status": "Indian", "price": 10.5, "composite": 60.62, "wAvg": 71.8, "days_away": 5, "next_match": "Gujarat Titans vs Sunrisers Hyderabad", "next_date": "2026-05-12", "last4": 398, "total": 701, "es": 30.31}, "options": [{"name": "Romario Shepherd", "team": "RCB", "position": "ALL ROUNDER", "status": "Foreign", "price": 8.5, "composite": 33.3, "wAvg": 35.1, "days_away": 0, "next_match": "Lucknow Super Giants vs Royal Challengers Bengaluru", "next_date": "2026-05-07", "last4": 89, "total": 246, "es": 43.29, "last4_games": 3}, {"name": "Krunal Pandya", "team": "RCB", "position": "ALL ROUNDER", "status": "Indian", "price": 9.0, "composite": 24.75, "wAvg": 27.4, "days_away": 0, "next_match": "Lucknow Super Giants vs Royal Challengers Bengaluru", "next_date": "2026-05-07", "last4": 84, "total": 331, "es": 32.18, "last4_games": 3}], "budget_after": 10.5}, {"out": {"name": "Shreyas Iyer", "team": "PBKS", "position": "BATSMAN", "status": "Indian", "price": 10.5, "composite": 47.23, "wAvg": 52.8, "days_away": 4, "next_match": "Punjab Kings vs Delhi Capitals", "next_date": "2026-05-11", "last4": 197, "total": 533, "es": 33.06}, "options": [{"name": "Ayush Badoni", "team": "LSG", "position": "BATSMAN", "status": "Indian", "price": 9.0, "composite": 29.31, "wAvg": 33.0, "days_away": 0, "next_match": "Lucknow Super Giants vs Royal Challengers Bengaluru", "next_date": "2026-05-07", "last4": 42, "total": 266, "es": 38.1, "last4_games": 2}, {"name": "Himmat Singh", "team": "LSG", "position": "BATSMAN", "status": "Indian", "price": 7.0, "composite": 20.33, "wAvg": 21.3, "days_away": 0, "next_match": "Lucknow Super Giants vs Royal Challengers Bengaluru", "next_date": "2026-05-07", "last4": 54, "total": 67, "es": 26.43, "last4_games": 2}, {"name": "Rajat Patidar", "team": "RCB", "position": "BATSMAN", "status": "Indian", "price": 9.0, "composite": 15.17, "wAvg": 16.2, "days_away": 0, "next_match": "Lucknow Super Giants vs Royal Challengers Bengaluru", "next_date": "2026-05-07", "last4": 45, "total": 439, "es": 19.72, "last4_games": 3}], "budget_after": 1.5}]}, "transfersLeft": 70};
+
+function ngBadge(n) {
+  // n = Next Game value from sheet: 0=today, 1=next cycle, etc.
+  if (n===0 || n==='0') return '<span class="tp-days-badge days-0">Today ✅</span>';
+  if (n===1 || n==='1') return '<span class="tp-days-badge days-1">Next game</span>';
+  if (n===2 || n==='2') return '<span class="tp-days-badge days-2">+2 games</span>';
+  if (n===3 || n==='3') return '<span class="tp-days-badge days-3">+3 games</span>';
+  if (n===4 || n==='4') return '<span class="tp-days-badge days-3">+4 games</span>';
+  return `<span class="tp-days-badge days-far">+${n} games</span>`;
+}
+
+function daysBadge(d) {
+  if (d===0) return '<span class="tp-days-badge days-0">Today</span>';
+  if (d===1) return '<span class="tp-days-badge days-1">Tomorrow</span>';
+  if (d===2) return '<span class="tp-days-badge days-2">2 days</span>';
+  if (d===3) return '<span class="tp-days-badge days-3">3 days</span>';
+  return `<span class="tp-days-badge days-far">${d} days</span>`;
+}
+
+function posLabel(p) {
+  return {
+    'WICKET KEEPER':'WK','BATSMAN':'BAT','ALL ROUNDER':'AR','BOWLER':'BOWL'
+  }[p]||(p||'').substring(0,3);
+}
+
+function tpPlayerCard(p, type) {
+  const cls = type==='out'?'out-card':'in-card';
+  const lbl = type==='out'?
+    '<span class="tp-out-label">⬇ Remove</span>':
+    '<span class="tp-in-label">⬆ Bring in</span>';
+  const esColor = type==='out'?'#f87171':'#4ade80';
+  return `
+  <div class="tp-player-card ${cls}">
+    <span class="team-dot team-${p.team}"></span>
+    <div style="flex:1;min-width:0">
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+        <span style="font-weight:700;font-size:0.92rem">${p.name}</span>
+        <span class="team-tag tag-${p.team}">${p.team}</span>
+        <span class="tp-pos-badge">${posLabel(p.position)}</span>
+        <span style="font-size:0.72rem;color:var(--text-secondary)">${p.status}</span>
+      </div>
+      <div style="font-size:0.75rem;color:var(--text-secondary);margin-top:3px;display:flex;gap:8px;flex-wrap:wrap">
+        ${ngBadge(p.nextGame??p.days_away??99)}
+        <span>⚡ ${p.composite}</span>
+        <span>🔥 L4: ${p.last4}</span>
+        <span>💰 ₹${p.price}Cr</span>
+        <span style="font-size:0.7rem;color:var(--text-secondary);max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${p.next_match}">${p.next_match}</span>
+      </div>
+    </div>
+    <div style="text-align:right;flex-shrink:0">
+      <div style="font-size:1rem;font-weight:800;color:${esColor}">${p.es}</div>
+      <div style="font-size:0.65rem;color:var(--text-secondary)">ES</div>
+    </div>
+  </div>`;
+}
+
+function buildTransferStep(step, stepNum) {
+  const out = step.out;
+  const opts = step.options;
+  const best = opts[0];
+  const alts = opts.slice(1);
+  const reason = buildTransferReason(out, best);
+  return `
+  <div class="tp-step">
+    <div class="tp-step-header">
+      <div class="tp-step-num">${stepNum}</div>
+      <div class="tp-step-title">Transfer ${stepNum}</div>
+      <div class="tp-step-budget">Budget after: ₹${step.budget_after}Cr</div>
+    </div>
+    <div class="tp-out-in">
+      <div class="tp-out">
+        <div class="tp-out-label">⬇ Remove</div>
+        ${tpPlayerCard(out,'out')}
+        <div style="font-size:0.72rem;color:var(--text-secondary);margin-top:4px;padding:4px 8px;background:rgba(248,113,113,0.07);border-radius:6px">${reason.outReason}</div>
+      </div>
+      <div class="tp-in">
+        <div class="tp-in-label">⬆ Best pick</div>
+        ${best ? tpPlayerCard(best,'in') : '<div style="color:#fb923c;font-size:0.82rem;padding:10px;background:rgba(251,146,60,0.08);border-radius:6px;border:1px solid rgba(251,146,60,0.2)">⚠️ No eligible player available today at this position within budget. Try combining with another transfer to free more budget.</div>'}
+        ${best ? `<div style="font-size:0.72rem;color:var(--text-secondary);margin-top:4px;padding:4px 8px;background:rgba(74,222,128,0.07);border-radius:6px">${reason.inReason}</div>` : ''}
+        ${alts.length ? `<div class="tp-alt-label">Also consider:</div>${alts.map(a=>tpPlayerCard(a,'in')).join('')}` : ''}
+      </div>
+    </div>
+  </div>`;
+}
+
+function buildTransferReason(out, inp) {
+  const outReasons = [];
+  const outNG = out.nextGame??out.days_away??99;
+  if (outNG >= 4) outReasons.push(`${out.team} don't play for another ${outNG} game cycles — dead weight for the current game`);
+  else if (outNG >= 2) outReasons.push(`${out.team} play ${outNG} game cycles away — not useful right now`);
+  if (out.composite < 30) outReasons.push(`Very low form (composite score: ${out.composite})`);
+  if (out.last4 < 100) outReasons.push(`Poor recent output — only ${out.last4} pts in last 4 games`);
+
+  const inReasons = [];
+  if (inp) {
+    if ((inp.nextGame??inp.days_away??99) === 0) inReasons.push(`Playing in the current game — immediate points`);
+    if (inp.composite > 70) inReasons.push(`Strong form: composite score ${inp.composite}`);
+    if (inp.price < out.price) inReasons.push(`Saves ₹${(out.price-inp.price).toFixed(1)}Cr for future transfers`);
+    if (inp.price === out.price) inReasons.push(`Same price — no budget impact`);
+  }
+
+  return {
+    outReason: outReasons.length ? outReasons[0] : `ES score: ${out.es}`,
+    inReason:  inReasons.length  ? inReasons[0]  : inp ? `ES score: ${inp.es}` : ''
+  };
+}
+
+function buildCurrentTeamTable(team) {
+  // Sort worst first: highest nextGame, then worst composite
+  const sorted = [...team].sort((a,b)=>{
+    const ng = (b.nextGame??b.days_away??99) - (a.nextGame??a.days_away??99);
+    if (ng!==0) return ng;
+    return (a.composite||0)-(b.composite||0);
+  });
+  const rows = team.map(p => {
+    const urgColor = p.days_away<=1?'#4ade80':p.days_away<=2?'#facc15':p.days_away<=3?'#fb923c':'#f87171';
+    return `
+    <div class="tp-player-row">
+      <span class="team-dot team-${p.team}"></span>
+      <div class="tp-player-info">
+        <div class="tp-player-name">${p.name}</div>
+        <div class="tp-player-meta">
+          <span class="team-tag tag-${p.team}" style="font-size:0.65rem">${p.team}</span>
+          <span class="tp-pos-badge">${posLabel(p.position)}</span>
+          <span>${p.status}</span>
+          <span>₹${p.price}Cr</span>
+        </div>
+      </div>
+      ${ngBadge(p.nextGame??p.days_away??99)}
+      <div class="tp-score-col">
+        <div class="tp-score-val" style="color:${urgColor}">${p.es}</div>
+        <div class="tp-score-sub">Eff. Score</div>
+      </div>
+    </div>`;
+  }).join('');
+  return `<div class="tp-card">
+    <div class="tp-card-header">
+      <div><div class="tp-card-title">📋 Your Squad</div><div class="tp-card-sub">Sorted by urgency to transfer out (worst first)</div></div>
+      <div style="text-align:right">
+        <div style="font-size:1rem;font-weight:700;color:var(--ipl-gold)">₹100Cr</div>
+        <div style="font-size:0.72rem;color:var(--text-secondary)">Budget used</div>
+      </div>
+    </div>
+    ${sorted.map(p => {
+      const ng2 = p.nextGame??p.days_away??99;
+      const urgColor = ng2<=1?'#4ade80':ng2<=2?'#facc15':ng2<=3?'#fb923c':'#f87171';
+      return `<div class="tp-player-row">
+        <span class="team-dot team-${p.team}"></span>
+        <div class="tp-player-info">
+          <div class="tp-player-name">${p.name}</div>
+          <div class="tp-player-meta">
+            <span class="team-tag tag-${p.team}" style="font-size:0.65rem">${p.team}</span>
+            <span class="tp-pos-badge">${posLabel(p.position)}</span>
+            <span>${p.status}</span>
+            <span>₹${p.price}Cr</span>
+          </div>
+        </div>
+        ${ngBadge(p.nextGame??p.days_away??99)}
+        <div class="tp-score-col">
+          <div class="tp-score-val" style="color:${urgColor}">${p.es}</div>
+          <div class="tp-score-sub">Eff. Score</div>
+        </div>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
+function buildKeyStats(team, transfersLeft) {
+  const tl = transfersLeft ?? TP_STATIC.transfersLeft ?? 70;
+  const playing_today = team.filter(p=>p.days_away===0).length;
+  const tomorrow = team.filter(p=>p.days_away===1).length;
+  const far = team.filter(p=>p.days_away>=4).length;
+  const foreign = team.filter(p=>p.status==='Foreign').length;
+  return `
+  <div class="tp-summary-bar">
+    <div class="tp-summary-chip" style="background:rgba(74,222,128,0.15);color:#4ade80;border:1px solid rgba(74,222,128,0.3)">
+      ✅ ${playing_today} playing today
+    </div>
+    <div class="tp-summary-chip" style="background:rgba(163,230,53,0.15);color:#a3e635;border:1px solid rgba(163,230,53,0.3)">
+      📅 ${tomorrow} playing tomorrow
+    </div>
+    <div class="tp-summary-chip" style="background:rgba(248,113,113,0.15);color:#f87171;border:1px solid rgba(248,113,113,0.3)">
+      ⚠️ ${far} sitting out 4+ days
+    </div>
+    <div class="tp-summary-chip" style="background:rgba(79,145,205,0.15);color:var(--ipl-sky);border:1px solid rgba(79,145,205,0.3)">
+      🌍 ${foreign}/4 foreign slots used
+    </div>
+    <div class="tp-summary-chip" style="background:rgba(245,166,35,0.15);color:var(--ipl-gold);border:1px solid rgba(245,166,35,0.3)">
+      🔄 ${tl} transfers left
+    </div>
+  </div>`;
+}
+
+let currentTPn = 1;
+let _livePlans = null;
+
+function renderTransferPlanner(rawTeamRows, playerPool, rawFixtures, playedMDs) {
+  let team, plans, transfersLeft = 70;
+  // Validate it's actually the CurrentTeam sheet (has Next Game column)
+  const isValidTeamSheet = rawTeamRows && rawTeamRows.length &&
+    rawTeamRows.some(r => 'Next Game' in r || 'Next Gam' in r || 'NextGame' in r);
+  if (isValidTeamSheet && playerPool) {
+    team  = parseCurrentTeam(rawTeamRows, playerPool);
+    plans = buildLiveTransferPlans(team, playerPool);
+  } else {
+    // Fallback to static data if sheet unavailable
+    team  = TP_STATIC.currentTeam;
+    plans = TP_STATIC.transferPlans;
+  }
+
+  const app = document.getElementById('tp-app');
+  if (!app) return;
+  _livePlans = plans;
+
+  app.innerHTML = `
+  <div style="padding:20px 0">
+    <div class="info-bar">
+      <div class="info-chip">🔄 <strong>${transfersLeft}</strong> transfers left</div>
+      <div class="info-chip">⚡ Effective Score = Composite × Urgency (today=1.3×, tomorrow=1.1×, 4+ days=0.7×)</div>
+      <div class="info-chip">📅 Transfers in: <strong>today's game only</strong> · min <strong>2 of last 4 games</strong> played</div>
+    </div>
+
+    ${buildKeyStats(team, transfersLeft)}
+
+    <div class="tp-grid">
+      ${buildCurrentTeamTable(team)}
+      <div>
+        <div class="tp-section-title" style="margin-bottom:10px">Select number of transfers</div>
+        <div class="tp-n-selector" id="tp-n-selector">
+          ${[1,2,3,4,5].map(n=>`<button class="tp-n-btn${n===currentTPn?' active':''}" onclick="selectTPn(${n})">${n} Transfer${n>1?'s':''}</button>`).join('')}
+        </div>
+        <div id="tp-plan-area"></div>
+      </div>
+    </div>
+  </div>`;
+
+  renderTPPlan(currentTPn);
+}
+
+function selectTPn(n) {
+  currentTPn = n;
+  document.querySelectorAll('.tp-n-btn').forEach((b,i)=>{
+    b.classList.toggle('active', i+1===n);
+  });
+  renderTPPlan(n);
+}
+
+
+function renderTPPlan(n) {
+  const plan = (_livePlans || TP_STATIC.transferPlans)[String(n)] || [];
+  const area = document.getElementById('tp-plan-area');
+  if (!area) return;
+  if (!plan.length) {
+    area.innerHTML = '<div class="empty"><div class="icon">🔄</div><div>No plan available</div></div>';
+    return;
+  }
+  area.innerHTML = `
+  <div class="tp-plan-container">
+    ${plan.map((step,i)=>buildTransferStep(step,i+1)).join('')}
+  </div>`;
+}
+
+
+// ── LIVE TEAM MERGE + PLAN BUILDER ────────────────────────────────────────
+
+// ── Urgency from Next Game column (from sheet) ──────────────────────────
+function urgFromNextGame(ng) {
+  const n = parseInt(ng);
+  if (isNaN(n)) return 0.3;  // unknown = treat as far away
+  return {0:1.3, 1:1.1, 2:1.0, 3:0.85, 4:0.7}[n] ?? 0.5;
+}
+
+// ── Effective score using sheet's Next Game value ───────────────────────
+function esFromSheet(composite, nextGame) {
+  return Math.round(composite * urgFromNextGame(nextGame) * 100) / 100;
+}
+
+// ── Parse CurrentTeam sheet rows into usable objects ────────────────────
+function parseCurrentTeam(rawTeamRows, playerPool) {
+  return rawTeamRows
+    .filter(r => {
+      const name = String(r['Player'] || '').trim();
+      // Skip blank rows and summary rows (Total Price, Remain Price, etc.)
+      return name && !name.toLowerCase().includes('price') &&
+             !name.toLowerCase().includes('remain') &&
+             !name.toLowerCase().includes('transfer');
+    })
+    .map(r => {
+      const name     = String(r['Player']).trim();
+      const team     = String(r['Team'] || '').trim();
+      const position = String(r['Position'] || '').trim();
+      const status   = String(r['Type'] || r['Status'] || '').trim();
+      const price    = parseFloat(r['Price']) || 0;
+      const nextGame = parseInt(r['Next Game'] ?? r['Next Gam'] ?? 99);
+
+      // Get composite score and form data from PlayerData pool
+      const poolP    = playerPool.find(p => p.name === name);
+      const composite= poolP ? poolP.composite : 0;
+      const wAvg     = poolP ? poolP.wAvg      : 0;
+      const last4    = poolP ? poolP.last4      : 0;
+      const last4g   = poolP ? poolP.last4_games: 0;
+      const total    = poolP ? poolP.total      : 0;
+      const avg      = poolP ? poolP.avg        : 0;
+      const next_match = poolP ? poolP.next_match : '';
+
+      const es = esFromSheet(composite, nextGame);
+
+      return {
+        name, team, position, status, price,
+        nextGame, composite, wAvg, last4, last4_games: last4g,
+        total, avg, next_match, es
+      };
+    });
+}
+
+// ── Build transfer plans from live team ─────────────────────────────────
+function buildLiveTransferPlans(currentTeam, playerPool) {
+  const currentNames = new Set(currentTeam.map(p => p.name));
+  const totalBudget  = currentTeam.reduce((s,p) => s+(p.price||0), 0);
+
+  // Sort by urgency to transfer out:
+  // highest nextGame first (furthest from playing), then worst composite
+  const sorted = [...currentTeam].sort((a,b) => {
+    const ngDiff = (b.nextGame||0) - (a.nextGame||0);
+    if (ngDiff !== 0) return ngDiff;
+    return (a.composite||0) - (b.composite||0);
+  });
+
+  const plans = {};
+
+  for (let n = 1; n <= 5; n++) {
+    const toRemove     = sorted.slice(0, n);
+    const removeNames  = new Set(toRemove.map(p => p.name));
+    const removedPrice = toRemove.reduce((s,p) => s+(p.price||0), 0);
+    const plan         = [];
+    const chosenNames  = new Set();
+    const chosenPrices = [];
+
+    for (const outP of toRemove) {
+      const spent       = chosenPrices.reduce((a,b)=>a+b, 0);
+      const budgetFreed = removedPrice - spent;
+
+      // Build current squad state after previous removals + ins
+      const currentAfter = [
+        ...currentTeam.filter(p => !removeNames.has(p.name)),
+        ...playerPool.filter(p => chosenNames.has(p.name))
+      ];
+      const remainingNames = new Set(currentAfter.map(p => p.name));
+      const foreignCt = currentAfter.filter(p =>
+        (p.status||'').toLowerCase().includes('foreign') ||
+        (p.status||'').toLowerCase().includes('overseas')
+      ).length;
+      const teamCt = {};
+      currentAfter.forEach(p => { teamCt[p.team] = (teamCt[p.team]||0)+1; });
+
+      const isOutForeign = (outP.status||'').toLowerCase().includes('foreign') ||
+                           (outP.status||'').toLowerCase().includes('overseas');
+
+      // Find candidates from PlayerData
+      const cands = playerPool.filter(p => {
+        if (remainingNames.has(p.name))                          return false;
+        if (currentNames.has(p.name) && !removeNames.has(p.name)) return false;
+        if (p.position !== outP.position)                        return false;
+        if ((p.price||0) > budgetFreed)                          return false;
+        // Must be playing TODAY (days_away = 0)
+        if (p.days_away !== 0)                                   return false;
+        // Min 2 of last 4 games played
+        if ((p.last4_games||0) < 2)                              return false;
+        // Foreign slot constraint
+        const isCandForeign = (p.status||'').toLowerCase().includes('foreign') ||
+                              (p.status||'').toLowerCase().includes('overseas');
+        if (isCandForeign && !isOutForeign && foreignCt >= 4)    return false;
+        if (isCandForeign && isOutForeign  && foreignCt > 4)     return false;
+        // Max 7 from one team
+        if ((teamCt[p.team]||0) >= 7)                            return false;
+        return true;
+      }).sort((a,b) => (b.composite||0) - (a.composite||0));
+
+      const top3   = cands.slice(0,3).map(p => ({...p, es: esFromSheet(p.composite, p.days_away === 0 ? 0 : 99)}));
+      const chosen = top3[0];
+      chosenNames.add(chosen?.name || '__none__');
+      chosenPrices.push(chosen?.price || 0);
+
+      plan.push({
+        out:         { ...outP },
+        options:     top3,
+        budget_after: Math.round((budgetFreed - (chosen?.price||0))*100)/100
+      });
+    }
+    plans[String(n)] = plan;
+  }
+  return plans;
+}
+
+// ── MAIN DATA LOADER ───────────────────────────────────────────────────────
+async function loadData() {
+  document.getElementById('loading-screen').style.display = 'flex';
+  document.getElementById('error-screen').style.display   = 'none';
+  document.getElementById('app').style.display            = 'none';
+  document.getElementById('last-updated-bar').textContent = 'Fetching latest data from Google Sheets…';
+
+  try {
+    const [rawPlayers, rawFixtures, rawTeam] = await Promise.all([
+      fetchSheet(PLAYERS_URL),
+      fetchSheet(FIXTURES_URL),
+      fetchSheet(TEAM_URL),     // CurrentTeam via Apps Script (gid lookup)
+    ]);
+
+    if (!rawPlayers.length)  throw new Error('PlayerData tab appears empty.');
+    if (!rawFixtures.length) throw new Error('FixtureList tab appears empty.');
+
+    const playedMDs = detectPlayedMDs(rawPlayers);
+    const last4MDs  = playedMDs.slice(-4);
+    if (!playedMDs.length) throw new Error('No match day data found.');
+
+    const players = rawPlayers
+      .filter(r => r['Player'] && String(r['Player']).trim())
+      .map(r => { const p = buildPlayer(r, playedMDs); p._raw = r; return p; });
+
+    const foreignRankings  = rankFixtures(players, rawFixtures, 'Foreign', 4);
+    const indianRankings   = rankFixtures(players, rawFixtures, 'Indian',  11);
+    const oppWeakness      = buildOpponentWeakness(players, playedMDs);
+    const captainRankings  = buildTCRankings(players, rawFixtures, oppWeakness);
+
+    renderRankings('foreign', foreignRankings, last4MDs);
+    renderRankings('indian',  indianRankings,  last4MDs);
+    renderTCRankings(captainRankings);
+    renderTransferPlanner(rawTeam, players, rawFixtures, playedMDs);
+
+    // Foreign Royale — past games
+    const royaleData       = buildForeignRoyaleData(players, playedMDs, rawFixtures);
+    const indianRoyaleData = buildIndianRoyaleData(players, playedMDs, rawFixtures);
+    renderForeignRoyale(royaleData);
+    renderIndianRoyale(indianRoyaleData);
+
+    document.getElementById('loading-screen').style.display = 'none';
+    document.getElementById('app').style.display            = '';
+    const teamStatus = isValidTeamSheet ?
+      `· 👕 ${rawTeam.filter(r=>String(r['Player']||'').trim() && !String(r['Player']||'').toLowerCase().includes('price') && !String(r['Player']||'').toLowerCase().includes('remain') && !String(r['Player']||'').toLowerCase().includes('transfer')).length} players in squad` :
+      '· ⚠️ CurrentTeam sheet not loaded';
+    document.getElementById('last-updated-bar').innerHTML   =
+      `✅ Last updated: <strong>${new Date().toLocaleString('en-IN', {timeZone:'Asia/Kolkata'})}</strong> IST
+       &nbsp;·&nbsp; ${players.length} players · ${rawFixtures.length} fixtures · ${playedMDs.length} MDs played ${teamStatus}
+       <button id="refresh-btn" onclick="loadData()">↻ Refresh</button>`;
+
+  } catch (err) {
+    console.error(err);
+    document.getElementById('loading-screen').style.display = 'none';
+    document.getElementById('error-screen').style.display   = 'flex';
+    document.getElementById('error-msg-text').textContent   =
+      err.message + '\n\nCheck that the Apps Script is deployed as a Web App with "Anyone" access, and sheet names are exactly "PlayerData" and "FixtureList".';
+    document.getElementById('error-url-text').textContent   = 'Apps Script URL: ' + APPS_SCRIPT_URL;
+  }
+}
+
+// ── INIT ───────────────────────────────────────────────────────────────────
+loadData();
+</script>
+</body>
+</html>
