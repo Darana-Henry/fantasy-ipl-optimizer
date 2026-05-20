@@ -49,9 +49,10 @@ export function buildPlayer(row, playedMDs) {
   const played    = num(row['Played']);
   const total     = num(row['Total']);
   const last4     = num(row['Last 4']);
-  const allScores = playedMDs.map(md => num(row[md])).filter(v => v > 0);
-  const recent    = allScores.length >= 4 ? allScores.slice(-4) : allScores;
-  const last4Games = recent.length;
+  const allScores  = playedMDs.map(md => num(row[md])).filter(v => v > 0);
+  const last4MDs   = playedMDs.slice(-4);
+  const last4Games = last4MDs.filter(md => num(row[md]) > 0).length;
+  const recent     = last4MDs.map(md => num(row[md])).filter(v => v > 0);
   const comp       = compositeScore(allScores);
 
   return {
