@@ -1,14 +1,39 @@
-import { TP_STATIC } from './config.js';
-import { ngBadge, posLabel } from './utils.js';
+import { TP_STATIC, TEAM_MAP } from './config.js';
+import { ngBadge, posLabel, isTodayOrFuture } from './utils.js';
 
 function urgFromNextGame(ng) {
   const n = parseInt(ng);
-  if (isNaN(n)) return 0.3;
-  return { 0: 1.3, 1: 1.1, 2: 1.0, 3: 0.85, 4: 0.7 }[n] ?? 0.5;
+  if (isNaN(n)) return 0.7;
+  return { 0: 1.3, 1: 1.1, 2: 1.0, 3: 0.85 }[n] ?? 0.7;
 }
 
 function esFromSheet(composite, nextGame) {
   return Math.round(composite * urgFromNextGame(nextGame) * 100) / 100;
+}
+
+// Build a map of team code → nextGame index (0 = playing in earliest upcoming fixture)
+function buildTeamNextGameMap(rawFixtures) {
+  const upcoming = (rawFixtures || [])
+    .filter(f => f['Match'] && !f['Match'].includes('TBD') && isTodayOrFuture(f['Date']))
+    .sort((a, b) => new Date(a['Date']) - new Date(b['Date']));
+
+  const dateList = [];
+  const seenDates = new Set();
+  for (const f of upcoming) {
+    const d = new Date(f['Date']).toDateString();
+    if (!seenDates.has(d)) { seenDates.add(d); dateList.push(d); }
+  }
+
+  const map = {};
+  for (const f of upcoming) {
+    const d   = new Date(f['Date']).toDateString();
+    const idx = dateList.indexOf(d);
+    Object.entries(TEAM_MAP)
+      .filter(([full]) => (f['Match'] || '').includes(full))
+      .map(([, code]) => code)
+      .forEach(team => { if (map[team] === undefined) map[team] = idx; });
+  }
+  return map;
 }
 
 function parseCurrentTeam(rawTeamRows, playerPool) {
@@ -18,6 +43,7 @@ function parseCurrentTeam(rawTeamRows, playerPool) {
       return name &&
         !name.toLowerCase().includes('price') &&
         !name.toLowerCase().includes('remain') &&
+        !name.toLowerCase().includes('total') &&
         !name.toLowerCase().includes('transfer');
     })
     .map(r => {
@@ -26,29 +52,32 @@ function parseCurrentTeam(rawTeamRows, playerPool) {
       const position = String(r['Position'] || '').trim();
       const status   = String(r['Type'] || r['Status'] || '').trim();
       const price    = parseFloat(r['Price']) || 0;
-      const nextGame = parseInt(r['Next Game'] ?? r['Next Gam'] ?? 99);
+
+      const ngRaw  = String(r['Next Game'] ?? r['Next Gam'] ?? '').trim();
+      const ngNum  = parseInt(ngRaw);
+      const nextGame = (ngRaw === '' || ngRaw.includes('N/A') || isNaN(ngNum)) ? 99 : ngNum;
 
       const poolP      = playerPool.find(p => p.name === name);
-      const composite  = poolP ? poolP.composite  : 0;
-      const wAvg       = poolP ? poolP.wAvg        : 0;
-      const last4      = poolP ? poolP.last4        : 0;
-      const last4Games = poolP ? poolP.last4Games   : 0;
-      const total      = poolP ? poolP.total        : 0;
-      const avg        = poolP ? poolP.avg          : 0;
-      const next_match = poolP ? poolP.next_match   : '';
+      const composite  = poolP ? poolP.composite : 0;
+      const wAvg       = poolP ? poolP.wAvg       : 0;
+      const last4      = poolP ? poolP.last4       : 0;
+      const last4Games = poolP ? poolP.last4Games  : 0;
+      const total      = poolP ? poolP.total       : 0;
+      const avg        = poolP ? poolP.avg         : 0;
       const es         = esFromSheet(composite, nextGame);
 
       return { name, team, position, status, price, nextGame, composite, wAvg,
-               last4, last4Games, total, avg, next_match, es };
+               last4, last4Games, total, avg, es };
     });
 }
 
-function buildLiveTransferPlans(currentTeam, playerPool) {
+function buildLiveTransferPlans(currentTeam, playerPool, rawFixtures) {
+  const teamNG      = buildTeamNextGameMap(rawFixtures);
   const currentNames = new Set(currentTeam.map(p => p.name));
   const plans = {};
 
   const sorted = [...currentTeam].sort((a, b) => {
-    const ngDiff = (b.nextGame || 0) - (a.nextGame || 0);
+    const ngDiff = (b.nextGame ?? 99) - (a.nextGame ?? 99);
     if (ngDiff !== 0) return ngDiff;
     return (a.composite || 0) - (b.composite || 0);
   });
@@ -83,9 +112,10 @@ function buildLiveTransferPlans(currentTeam, playerPool) {
       const cands = playerPool.filter(p => {
         if (remainingNames.has(p.name))                              return false;
         if (currentNames.has(p.name) && !removeNames.has(p.name))   return false;
-        if (p.position !== outP.position)                            return false;
+        if ((p.position || '').toUpperCase() !== (outP.position || '').toUpperCase()) return false;
         if ((p.price || 0) > budgetFreed)                            return false;
-        if (p.days_away !== 0)                                       return false;
+        const pNG = teamNG[p.team] ?? 99;
+        if (pNG !== 0)                                               return false;
         if ((p.last4Games || 0) < 2)                                 return false;
         const isCandForeign = (p.status || '').toLowerCase().includes('foreign') ||
                               (p.status || '').toLowerCase().includes('overseas');
@@ -95,7 +125,7 @@ function buildLiveTransferPlans(currentTeam, playerPool) {
         return true;
       }).sort((a, b) => (b.composite || 0) - (a.composite || 0));
 
-      const top3   = cands.slice(0, 3).map(p => ({ ...p, es: esFromSheet(p.composite, p.days_away === 0 ? 0 : 99) }));
+      const top3   = cands.slice(0, 3).map(p => ({ ...p, es: esFromSheet(p.composite, 0) }));
       const chosen = top3[0];
       chosenNames.add(chosen?.name || '__none__');
       chosenPrices.push(chosen?.price || 0);
@@ -124,11 +154,10 @@ function tpPlayerCard(p) {
         <span style="font-size:0.72rem;color:var(--text-secondary)">${p.status}</span>
       </div>
       <div style="font-size:0.75rem;color:var(--text-secondary);margin-top:3px;display:flex;gap:8px;flex-wrap:wrap">
-        ${ngBadge(p.nextGame ?? p.days_away ?? 99)}
+        ${ngBadge(p.nextGame ?? p.days_away ?? 0)}
         <span>⚡ ${p.composite}</span>
         <span>🔥 L4: ${p.last4}</span>
         <span>💰 ₹${p.price}Cr</span>
-        <span style="font-size:0.7rem;color:var(--text-secondary);max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${p.next_match}">${p.next_match}</span>
       </div>
     </div>
     <div style="text-align:right;flex-shrink:0">
@@ -224,6 +253,8 @@ function buildCurrentTeamTable(team) {
     return (a.composite || 0) - (b.composite || 0);
   });
 
+  const totalPrice = sorted.reduce((s, p) => s + (p.price || 0), 0).toFixed(1);
+
   const rows = sorted.map(p => {
     const ng2     = p.nextGame ?? p.days_away ?? 99;
     const urgColor = ng2 <= 1 ? '#4ade80' : ng2 <= 2 ? '#facc15' : ng2 <= 3 ? '#fb923c' : '#f87171';
@@ -254,16 +285,15 @@ function buildCurrentTeamTable(team) {
         <div class="tp-card-sub">Sorted by urgency to transfer out (worst first)</div>
       </div>
       <div style="text-align:right">
-        <div style="font-size:1rem;font-weight:700;color:var(--ipl-gold)">₹100Cr</div>
-        <div style="font-size:0.72rem;color:var(--text-secondary)">Budget used</div>
+        <div style="font-size:1rem;font-weight:700;color:var(--ipl-gold)">₹${totalPrice}Cr</div>
+        <div style="font-size:0.72rem;color:var(--text-secondary)">Squad value</div>
       </div>
     </div>
     ${rows}
   </div>`;
 }
 
-function buildKeyStats(team, transfersLeft) {
-  const tl            = transfersLeft ?? TP_STATIC.transfersLeft ?? 70;
+function buildKeyStats(team) {
   const playing_today = team.filter(p => (p.days_away ?? p.nextGame) === 0).length;
   const tomorrow      = team.filter(p => (p.days_away ?? p.nextGame) === 1).length;
   const far           = team.filter(p => (p.days_away ?? p.nextGame) >= 4).length;
@@ -272,10 +302,9 @@ function buildKeyStats(team, transfersLeft) {
   return `
   <div class="tp-summary-bar">
     <div class="tp-summary-chip" style="background:rgba(74,222,128,0.15);color:#4ade80;border:1px solid rgba(74,222,128,0.3)">✅ ${playing_today} playing today</div>
-    <div class="tp-summary-chip" style="background:rgba(163,230,53,0.15);color:#a3e635;border:1px solid rgba(163,230,53,0.3)">📅 ${tomorrow} playing tomorrow</div>
-    <div class="tp-summary-chip" style="background:rgba(248,113,113,0.15);color:#f87171;border:1px solid rgba(248,113,113,0.3)">⚠️ ${far} sitting out 4+ days</div>
+    <div class="tp-summary-chip" style="background:rgba(163,230,53,0.15);color:#a3e635;border:1px solid rgba(163,230,53,0.3)">📅 ${tomorrow} playing next cycle</div>
+    <div class="tp-summary-chip" style="background:rgba(248,113,113,0.15);color:#f87171;border:1px solid rgba(248,113,113,0.3)">⚠️ ${far} sitting out 4+ cycles</div>
     <div class="tp-summary-chip" style="background:rgba(79,145,205,0.15);color:var(--ipl-sky);border:1px solid rgba(79,145,205,0.3)">🌍 ${foreign}/4 foreign slots used</div>
-    <div class="tp-summary-chip" style="background:rgba(245,166,35,0.15);color:var(--ipl-gold);border:1px solid rgba(245,166,35,0.3)">🔄 ${tl} transfers left</div>
   </div>`;
 }
 
@@ -300,24 +329,22 @@ export function renderTransferPlanner(rawTeamRows, playerPool, rawFixtures, play
   let team;
   if (isValidTeamSheet && playerPool) {
     team      = parseCurrentTeam(rawTeamRows, playerPool);
-    livePlans = buildLiveTransferPlans(team, playerPool);
+    livePlans = buildLiveTransferPlans(team, playerPool, rawFixtures);
   } else {
     team      = TP_STATIC.currentTeam;
     livePlans = TP_STATIC.transferPlans;
   }
 
-  const transfersLeft = TP_STATIC.transfersLeft ?? 70;
   const app = document.getElementById('tp-app');
   if (!app) return isValidTeamSheet;
 
   app.innerHTML = `
   <div style="padding:20px 0">
     <div class="info-bar">
-      <div class="info-chip">🔄 <strong>${transfersLeft}</strong> transfers left</div>
-      <div class="info-chip">⚡ Effective Score = Composite × Urgency (today=1.3×, tomorrow=1.1×, 4+ days=0.7×)</div>
-      <div class="info-chip">📅 Transfers in: <strong>today's game only</strong> · min <strong>2 of last 4 games</strong> played</div>
+      <div class="info-chip">⚡ Effective Score = Composite × Urgency (today=1.3×, next=1.1×, 4+ cycles=0.7×)</div>
+      <div class="info-chip">📅 Transfer candidates: <strong>playing today</strong> · min <strong>2 of last 4 games</strong> played</div>
     </div>
-    ${buildKeyStats(team, transfersLeft)}
+    ${buildKeyStats(team)}
     <div class="tp-grid">
       ${buildCurrentTeamTable(team)}
       <div>
@@ -330,7 +357,6 @@ export function renderTransferPlanner(rawTeamRows, playerPool, rawFixtures, play
     </div>
   </div>`;
 
-  // N-selector event delegation
   document.getElementById('tp-n-selector').addEventListener('click', e => {
     const btn = e.target.closest('.tp-n-btn');
     if (!btn) return;

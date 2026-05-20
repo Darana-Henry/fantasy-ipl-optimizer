@@ -1,7 +1,7 @@
 export const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzgm21rsLxxP9G2u7WS6RZXF9BIkH0pACRgVvu_Ksag8AdXQVF1zVwK1hBh9dtyPPmqbQ/exec';
 export const PLAYERS_URL  = APPS_SCRIPT_URL + '?sheet=PlayerData';
 export const FIXTURES_URL = APPS_SCRIPT_URL + '?sheet=FixtureList';
-export const TEAM_URL     = APPS_SCRIPT_URL + '?gid=87107120';
+export const TEAM_URL     = APPS_SCRIPT_URL + '?sheet=CurrentTeam';
 
 export const TEAM_MAP = {
   'Sunrisers Hyderabad':      'SRH',
