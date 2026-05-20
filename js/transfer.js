@@ -1,5 +1,5 @@
 import { TP_STATIC, TEAM_MAP } from './config.js';
-import { ngBadge, posLabel, isTodayOrFuture } from './utils.js';
+import { ngBadge, posLabel } from './utils.js';
 
 function urgFromNextGame(ng) {
   const n = parseInt(ng);
@@ -11,27 +11,28 @@ function esFromSheet(composite, nextGame) {
   return Math.round(composite * urgFromNextGame(nextGame) * 100) / 100;
 }
 
-// Build a map of team code → nextGame index (0 = playing in earliest upcoming fixture)
-function buildTeamNextGameMap(rawFixtures) {
-  const upcoming = (rawFixtures || [])
-    .filter(f => f['Match'] && !f['Match'].includes('TBD') && isTodayOrFuture(f['Date']))
+// Build a map of team code → nextGame cycle (0 = playing in next game cycle).
+// Seeds from currentTeam's Next Game column (the reliable source), then propagates
+// to fixture opponents — both teams in a fixture share the same cycle number.
+function buildTeamNextGameMap(currentTeam, rawFixtures) {
+  const map = {};
+  currentTeam.forEach(p => {
+    const ng = typeof p.nextGame === 'number' ? p.nextGame : 99;
+    if (map[p.team] === undefined || ng < map[p.team]) map[p.team] = ng;
+  });
+
+  const sorted = (rawFixtures || [])
+    .filter(f => f['Match'] && !f['Match'].includes('TBD'))
     .sort((a, b) => new Date(a['Date']) - new Date(b['Date']));
 
-  const dateList = [];
-  const seenDates = new Set();
-  for (const f of upcoming) {
-    const d = new Date(f['Date']).toDateString();
-    if (!seenDates.has(d)) { seenDates.add(d); dateList.push(d); }
-  }
-
-  const map = {};
-  for (const f of upcoming) {
-    const d   = new Date(f['Date']).toDateString();
-    const idx = dateList.indexOf(d);
-    Object.entries(TEAM_MAP)
+  for (const f of sorted) {
+    const teams = Object.entries(TEAM_MAP)
       .filter(([full]) => (f['Match'] || '').includes(full))
-      .map(([, code]) => code)
-      .forEach(team => { if (map[team] === undefined) map[team] = idx; });
+      .map(([, code]) => code);
+    if (teams.length !== 2) continue;
+    const [t1, t2] = teams;
+    if (map[t1] !== undefined && map[t2] === undefined) map[t2] = map[t1];
+    if (map[t2] !== undefined && map[t1] === undefined) map[t1] = map[t2];
   }
   return map;
 }
@@ -72,7 +73,7 @@ function parseCurrentTeam(rawTeamRows, playerPool) {
 }
 
 function buildLiveTransferPlans(currentTeam, playerPool, rawFixtures) {
-  const teamNG      = buildTeamNextGameMap(rawFixtures);
+  const teamNG      = buildTeamNextGameMap(currentTeam, rawFixtures);
   const currentNames = new Set(currentTeam.map(p => p.name));
   const plans = {};
 
